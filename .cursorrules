@@ -507,34 +507,47 @@ final class DeckGenerationService {
 
 ### Tier Structure
 
-**FREE TIER**
-- 3 decks/month
-- Up to 10 slides/deck
+**FREE TIER (Limited Trial)**
+- 1 deck TOTAL (not per month - ONE deck to try it)
+- Up to 8 slides per deck
 - Basic AI (Gemini Flash)
-- PDF export only
-- 3 themes
-- Community support
+- PDF export with watermark
+- 1 theme only
+- No support
 
-**PRO TIER ($29/month or $249/year)**
-- Unlimited decks
-- Up to 30 slides/deck
-- Advanced AI (GPT-4/5)
-- Document upload & analysis
-- Export to PowerPoint, Google Slides, PDF
-- All premium themes
-- AI story feedback
-- Priority support
+**PRO TIER ($9.99/month or $79/year)**
+- ✨ **UNLIMITED decks**
+- Up to 20 slides/deck
+- Better AI (Gemini Pro)
+- Export to PDF + PowerPoint
+- 10 premium themes
+- Email support
 - No watermarks
+- Edit & regenerate slides
+- 7-day free trial
+
+**PRO PLUS TIER ($29.99/month or $249/year)**
+- Everything in Pro
+- Up to 30 slides/deck
+- 🔥 **ELITE AI** (GPT-4/5 + Gemini 2.0)
+- 📄 **Document upload & AI analysis**
+- Export to Google Slides (in addition to PDF/PPTX)
+- All premium themes (20+)
+- 🎯 **AI story feedback** (accelerator scoring)
+- 🚀 **Accelerator templates** (YC, NVIDIA)
+- Priority support (24h response)
+- Custom branding on exports
 - 7-day free trial
 
 **ENTERPRISE (Custom pricing)**
-- Everything in Pro
+- Everything in Pro Plus
 - Unlimited slides
-- Custom branding
 - Team collaboration
+- Multiple users
 - API access
+- White-label option
 - Dedicated account manager
-- SLA
+- SLA guarantee
 
 ### RevenueCat Integration
 

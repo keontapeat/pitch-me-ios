@@ -122,30 +122,46 @@ open "Pitch Me.xcodeproj"
 
 ## 🎨 Features Overview
 
-### Free Tier
-- 3 decks per month
-- Up to 10 slides per deck
-- Basic AI generation
-- 3 themes
-- PDF export
-- Community support
+### Free Tier (Trial)
+- **1 deck TOTAL** (try before you buy)
+- Up to 8 slides per deck
+- Basic AI (Gemini Flash)
+- PDF export with watermark
+- 1 theme only
+- No support
 
-### Pro Tier ($29/month)
-- ✨ **Unlimited decks**
-- 📄 **Document upload & AI analysis**
-- 🤖 **Advanced AI (GPT-4/5)**
-- 📤 **Export to PowerPoint & Google Slides**
-- 🎨 **All premium themes**
-- ⭐ **AI story feedback**
-- 🚀 **Priority support**
-- 🎯 **No watermarks**
+### Pro Tier ($9.99/month or $79/year)
+- ✨ **UNLIMITED decks**
+- Up to 20 slides per deck
+- Better AI (Gemini Pro)
+- Export to PDF + PowerPoint
+- 10 premium themes
+- Email support
+- No watermarks
+- Edit & regenerate slides
+- 7-day free trial
 
-### Enterprise (Custom)
+### Pro Plus Tier ($29.99/month or $249/year)
 - Everything in Pro
-- Custom branding
+- 🔥 **ELITE AI (GPT-4/5 + Gemini 2.0)**
+- 📄 **Document upload & AI analysis**
+- Up to 30 slides per deck
+- 📤 **Export to Google Slides** (+ PDF/PPTX)
+- 🎨 **All premium themes (20+)**
+- ⭐ **AI story feedback**
+- 🎯 **Accelerator templates (YC, NVIDIA)**
+- 🚀 **Priority support (24h)**
+- Custom branding on exports
+- 7-day free trial
+
+### Enterprise (Custom pricing)
+- Everything in Pro Plus
 - Team collaboration
+- Multiple users
 - API access
-- Dedicated support
+- White-label option
+- Dedicated account manager
+- SLA guarantee
 
 ---
 

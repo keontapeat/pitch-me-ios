@@ -2,7 +2,7 @@
 //  SubscriptionService.swift
 //  Pitch Me
 //
-//  Subscription management service
+//  AGGRESSIVE subscription management - Force them to pay! 💰
 //
 
 import Foundation
@@ -14,59 +14,31 @@ final class SubscriptionService: ObservableObject {
     static let shared = SubscriptionService()
     
     @Published var currentTier: SubscriptionTier = .free
-    @Published var subscriptionStatus: SubscriptionStatus?
     @Published var isLoading = false
     
     private init() {
-        loadSubscriptionStatus()
+        loadSubscriptionTier()
     }
     
     // MARK: - Subscription Status
     
-    func loadSubscriptionStatus() {
+    func loadSubscriptionTier() {
         // Load from UserDefaults for now
         // In production, this would sync with RevenueCat/StoreKit
         if let savedTier = UserDefaults.standard.string(forKey: "subscription_tier"),
            let tier = SubscriptionTier(rawValue: savedTier) {
             currentTier = tier
         }
-        
-        // Create status
-        let decksCreated = UserDefaults.standard.integer(forKey: "decks_created_this_month")
-        let lastReset = UserDefaults.standard.object(forKey: "last_reset_date") as? Date ?? Date()
-        
-        subscriptionStatus = SubscriptionStatus(
-            tier: currentTier,
-            isActive: true,
-            expiresAt: nil, // Would come from payment provider
-            decksCreatedThisMonth: decksCreated,
-            lastResetDate: lastReset
-        )
-        
-        // Check if we need to reset monthly counter
-        checkAndResetMonthlyLimits()
     }
     
-    private func checkAndResetMonthlyLimits() {
-        guard let status = subscriptionStatus else { return }
-        
-        let calendar = Calendar.current
-        let now = Date()
-        
-        // Reset if it's a new month
-        if !calendar.isDate(status.lastResetDate, equalTo: now, toGranularity: .month) {
-            UserDefaults.standard.set(0, forKey: "decks_created_this_month")
-            UserDefaults.standard.set(now, forKey: "last_reset_date")
-            loadSubscriptionStatus()
-        }
-    }
-    
-    // MARK: - Feature Gating
+    // MARK: - Feature Gating (AGGRESSIVE)
     
     func canAccessFeature(_ feature: Feature) -> Bool {
         switch feature {
         case .createDeck:
-            return subscriptionStatus?.canCreateDeck ?? false
+            // Free users can only create 1 deck TOTAL (not per month)
+            let totalDecks = totalDecksCreated
+            return totalDecks < currentTier.maxDecksTotal
         case .uploadDocuments:
             return currentTier.canUploadDocuments
         case .advancedAI:
@@ -84,13 +56,27 @@ final class SubscriptionService: ObservableObject {
         }
     }
     
-    func incrementDeckCount() {
-        let current = UserDefaults.standard.integer(forKey: "decks_created_this_month")
-        UserDefaults.standard.set(current + 1, forKey: "decks_created_this_month")
-        loadSubscriptionStatus()
+    // Total decks created EVER (for free tier limit)
+    var totalDecksCreated: Int {
+        UserDefaults.standard.integer(forKey: "decks_created_total")
     }
     
-    // MARK: - Upgrade
+    func incrementDeckCount() {
+        let current = totalDecksCreated
+        UserDefaults.standard.set(current + 1, forKey: "decks_created_total")
+    }
+    
+    // Remaining decks for current tier
+    var remainingDecks: Int {
+        let total = totalDecksCreated
+        let limit = currentTier.maxDecksTotal
+        if limit == .max {
+            return .max
+        }
+        return max(0, limit - total)
+    }
+    
+    // MARK: - Upgrade to Pro ($9.99)
     
     func upgradeToPro() async throws {
         isLoading = true
@@ -99,12 +85,32 @@ final class SubscriptionService: ObservableObject {
         try? await Task.sleep(nanoseconds: 1_000_000_000)
         
         // In production, integrate with RevenueCat:
-        // let result = try await Purchases.shared.purchase(package: proMonthly)
+        // let offerings = try await Purchases.shared.offerings()
+        // let package = offerings.current?.package(identifier: "pro_monthly")
+        // let result = try await Purchases.shared.purchase(package: package)
         
         currentTier = .pro
         UserDefaults.standard.set(SubscriptionTier.pro.rawValue, forKey: "subscription_tier")
         
-        loadSubscriptionStatus()
+        isLoading = false
+    }
+    
+    // MARK: - Upgrade to Pro Plus ($29.99)
+    
+    func upgradeToProPlus() async throws {
+        isLoading = true
+        
+        // Simulate purchase flow
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        
+        // In production, integrate with RevenueCat:
+        // let offerings = try await Purchases.shared.offerings()
+        // let package = offerings.current?.package(identifier: "proplus_monthly")
+        // let result = try await Purchases.shared.purchase(package: package)
+        
+        currentTier = .proPlus
+        UserDefaults.standard.set(SubscriptionTier.proPlus.rawValue, forKey: "subscription_tier")
+        
         isLoading = false
     }
     
@@ -116,6 +122,7 @@ final class SubscriptionService: ObservableObject {
         
         // In production:
         // let customerInfo = try await Purchases.shared.restorePurchases()
+        // Update currentTier based on active entitlements
         
         isLoading = false
     }
@@ -133,4 +140,3 @@ enum Feature {
     case aiFeedback
     case prioritySupport
 }
-

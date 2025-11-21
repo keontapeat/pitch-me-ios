@@ -30,11 +30,11 @@ struct PaywallView: View {
                             .font(.system(size: 56))
                             .foregroundColor(.pitchLime)
                         
-                        Text("Upgrade to Pro")
+                        Text("Choose Your Plan")
                             .font(.system(size: 36, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
                         
-                        Text("Unlock unlimited decks, document uploads, and advanced AI")
+                        Text("Start creating unlimited decks today")
                             .font(Typography.bodyLarge)
                             .foregroundColor(.white.opacity(0.8))
                             .multilineTextAlignment(.center)
@@ -46,11 +46,16 @@ struct PaywallView: View {
                         PlanCard(
                             tier: .pro,
                             isSelected: selectedPlan == .pro,
-                            onSelect: { selectedPlan = .pro }
+                            onSelect: { selectedPlan = .pro },
+                            badge: "🔥 Most Popular"
                         )
                         
-                        // Free tier for comparison
-                        ComparisonCard(tier: .free)
+                        PlanCard(
+                            tier: .proPlus,
+                            isSelected: selectedPlan == .proPlus,
+                            onSelect: { selectedPlan = .proPlus },
+                            badge: "🚀 Power Users"
+                        )
                     }
                     .padding(.horizontal, Spacing.screenMarginHorizontal)
                     
@@ -60,7 +65,7 @@ struct PaywallView: View {
                             .font(Typography.titleMedium)
                             .foregroundColor(.white)
                         
-                        ForEach(SubscriptionTier.pro.features, id: \.self) { feature in
+                        ForEach(selectedPlan.features, id: \.self) { feature in
                             PaywallFeatureRow(feature: feature)
                         }
                     }
@@ -74,7 +79,11 @@ struct PaywallView: View {
                             isLoading: subscriptionService.isLoading
                         ) {
                             Task {
-                                try? await subscriptionService.upgradeToPro()
+                                if selectedPlan == .pro {
+                                    try? await subscriptionService.upgradeToPro()
+                                } else if selectedPlan == .proPlus {
+                                    try? await subscriptionService.upgradeToProPlus()
+                                }
                                 dismiss()
                             }
                         }
@@ -87,7 +96,7 @@ struct PaywallView: View {
                         .font(Typography.labelMedium)
                         .foregroundColor(.white.opacity(0.7))
                         
-                        Text("Cancel anytime. $29/month after trial.")
+                        Text("Cancel anytime. \(selectedPlan.monthlyPrice)/month after trial.")
                             .font(Typography.labelSmall)
                             .foregroundColor(.white.opacity(0.5))
                     }
@@ -124,6 +133,14 @@ struct PlanCard: View {
     let tier: SubscriptionTier
     let isSelected: Bool
     let onSelect: () -> Void
+    let badge: String?
+    
+    init(tier: SubscriptionTier, isSelected: Bool, onSelect: @escaping () -> Void, badge: String? = nil) {
+        self.tier = tier
+        self.isSelected = isSelected
+        self.onSelect = onSelect
+        self.badge = badge
+    }
     
     var body: some View {
         Button(action: onSelect) {
@@ -144,11 +161,9 @@ struct PlanCard: View {
                                 .foregroundColor(.white.opacity(0.6))
                         }
                         
-                        if let yearly = tier.yearlyPrice {
-                            Text("or \(yearly)/year (save $99)")
-                                .font(Typography.labelSmall)
-                                .foregroundColor(.pitchLime)
-                        }
+                        Text("or \(tier.yearlyPrice)/year")
+                            .font(Typography.labelSmall)
+                            .foregroundColor(.pitchLime)
                     }
                     
                     Spacer()
@@ -161,13 +176,15 @@ struct PlanCard: View {
                 }
                 
                 // Badge
-                Text("🔥 Most Popular")
-                    .font(Typography.labelSmall)
-                    .foregroundColor(.pitchCharcoal)
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, 4)
-                    .background(Color.pitchLime)
-                    .cornerRadius(12)
+                if let badge = badge {
+                    Text(badge)
+                        .font(Typography.labelSmall)
+                        .foregroundColor(.pitchCharcoal)
+                        .padding(.horizontal, Spacing.sm)
+                        .padding(.vertical, 4)
+                        .background(Color.pitchLime)
+                        .cornerRadius(12)
+                }
             }
             .padding(Spacing.lg)
             .background(
@@ -208,7 +225,7 @@ struct ComparisonCard: View {
                     .foregroundColor(.white.opacity(0.8))
             }
             
-            Text("\(tier.maxDecksPerMonth) decks/month • Basic features")
+            Text("1 deck total • Basic features")
                 .font(Typography.bodySmall)
                 .foregroundColor(.white.opacity(0.6))
         }

@@ -14,47 +14,77 @@ A complete freemium monetization system with:
 
 ## 💎 SUBSCRIPTION TIERS
 
-### FREE TIER
-**Price:** $0/month
+### FREE TIER (Limited Trial)
+**Price:** $0 (one-time trial)
 
 **Limits:**
-- 3 decks per month
-- Up to 10 slides per deck
-- 3 beautiful themes
-- PDF export only
-- Basic AI generation
-- Community support
+- **1 deck TOTAL** (not monthly - just ONE to try)
+- Up to 8 slides per deck
+- 1 theme only (Clean Light)
+- PDF export with watermark
+- Basic AI (Gemini Flash)
+- No support
 
-**Perfect for:** Testing the app, small projects, personal use
+**Goal:** Give users a taste, then make them upgrade 💰
 
-### PRO TIER  
-**Price:** $29/month or $249/year (save $99)
+**Perfect for:** Trying the app, seeing the magic
+
+---
+
+### PRO TIER 🔥
+**Price:** $9.99/month or $79/year (save $40)
 
 **Features:**
 - ✨ **UNLIMITED decks**
-- 📄 **Upload documents** (PDF, Word, PowerPoint, Pitch Decks)
-- 🤖 **Advanced AI (GPT-4/5)** document analysis
-- 📤 **Export to PowerPoint & Google Slides**
-- 🎨 **All premium themes**
-- ⭐ **AI story feedback & critique**
-- 🚀 **Priority support**
-- 🎯 **No watermarks**
+- Up to 20 slides per deck
+- Better AI (Gemini Pro)
+- Export to PDF + PowerPoint (NO watermark)
+- 10 premium themes
+- Edit & regenerate slides
+- Email support (48h response)
+- 7-day free trial
 
-**Perfect for:** Founders, consultants, agencies, frequent users
+**Goal:** Main conversion tier. LOW barrier at $9.99, most users will need this 💵
+
+**Perfect for:** Active founders, regular deck creators
+
+---
+
+### PRO PLUS TIER 🚀
+**Price:** $29.99/month or $249/year (save $110)
+
+**Features:**
+- Everything in Pro
+- Up to 30 slides per deck
+- 🔥 **ELITE AI (GPT-4/5 + Gemini 2.0)**
+- 📄 **Document upload & AI analysis**
+- Export to Google Slides (in addition to PDF/PPTX)
+- All premium themes (20+)
+- 🎯 **AI story feedback** (accelerator scoring)
+- 🚀 **Accelerator templates** (YC, NVIDIA)
+- Priority support (24h response)
+- Custom branding on exports
+- 7-day free trial
+
+**Goal:** Premium tier for power users. Document upload + accelerator optimization = worth $30
+
+**Perfect for:** Raising funding, applying to accelerators, serious founders
+
+---
 
 ### ENTERPRISE TIER
-**Price:** Custom
+**Price:** Custom ($500-2000+/month)
 
-**Everything in Pro plus:**
+**Everything in Pro Plus:**
 - Unlimited slides per deck
-- Custom branding
-- Team collaboration
+- Team collaboration (multiple users)
 - API access
+- White-label option
 - Dedicated account manager
 - Custom integrations
 - SLA guarantee
 
-**Perfect for:** Large teams, agencies, white-label use
+**Perfect for:** Large teams, agencies, consulting firms
 
 ---
 
@@ -127,18 +157,22 @@ if subscriptionService.canAccessFeature(.uploadDocuments) {
 
 ### Gated Features
 
-| Feature | Free | Pro | Enterprise |
-|---------|------|-----|------------|
-| Create decks | 3/month | Unlimited | Unlimited |
-| Slides per deck | 10 | 30 | Unlimited |
-| Upload documents | ❌ | ✅ | ✅ |
-| Advanced AI | ❌ | ✅ | ✅ |
-| Export to PowerPoint | ❌ | ✅ | ✅ |
-| Export to Google Slides | ❌ | ✅ | ✅ |
-| Export to PDF | ✅ | ✅ | ✅ |
-| AI feedback | ❌ | ✅ | ✅ |
-| Priority support | ❌ | ✅ | ✅ |
-| Custom branding | ❌ | ❌ | ✅ |
+| Feature | Free | Pro | Pro Plus | Enterprise |
+|---------|------|-----|----------|------------|
+| Create decks | 1 TOTAL | Unlimited | Unlimited | Unlimited |
+| Slides per deck | 8 | 20 | 30 | Unlimited |
+| Upload documents | ❌ | ❌ | ✅ | ✅ |
+| Elite AI (GPT-4/5) | ❌ | ❌ | ✅ | ✅ |
+| Better AI (Gemini Pro) | ❌ | ✅ | ✅ | ✅ |
+| Export to PowerPoint | ❌ | ✅ | ✅ | ✅ |
+| Export to Google Slides | ❌ | ❌ | ✅ | ✅ |
+| Export to PDF | ✅ (watermark) | ✅ | ✅ | ✅ |
+| AI story feedback | ❌ | ❌ | ✅ | ✅ |
+| Accelerator templates | ❌ | ❌ | ✅ | ✅ |
+| Priority support | ❌ | ✅ | ✅ | ✅ |
+| Custom branding | ❌ | ❌ | ❌ | ✅ |
+| Team collaboration | ❌ | ❌ | ❌ | ✅ |
+| API access | ❌ | ❌ | ❌ | ✅ |
 
 ---
 
@@ -399,24 +433,38 @@ export const analyzeDocument = functions.https.onCall(async (data, context) => {
 
 ## 📱 USER FLOWS
 
-### Free User Flow
+### Free User Flow (AGGRESSIVE CONVERSION)
 
 ```
 1. Install app → See onboarding → Free tier by default
-2. Create deck #1 → Works perfectly
-3. Create deck #2 → Works perfectly
-4. Create deck #3 → Works perfectly
-5. Try to create deck #4 → ❌ Limit reached alert
-   → "You've reached your limit of 3 decks this month"
-   → "Upgrade to Pro for unlimited decks"
-   → Button: "Upgrade to Pro"
-6. Tap "Upgrade to Pro" → Opens paywall
-7. See pricing & features → Decides to upgrade
-8. Tap "Start Free 7-Day Trial" → RevenueCat purchase flow
-9. Now Pro user → Unlimited decks unlocked! 🎉
+2. Create deck #1 → Works perfectly (PDF with watermark)
+3. Try to create deck #2 → ❌ BLOCKED
+   → "You've used your free deck!"
+   → "Upgrade to Pro for unlimited decks starting at just $9.99/month"
+   → Button: "See Plans"
+4. Tap "See Plans" → Opens paywall
+5. See pricing:
+   - Pro: $9.99/month (Unlimited decks!)
+   - Pro Plus: $29.99/month (Document upload + Elite AI)
+6. Thinks: "I need more decks... $9.99 is affordable"
+7. Tap "Start Free 7-Day Trial" → RevenueCat purchase flow
+8. Now Pro user → Unlimited decks unlocked! 🎉
+9. Revenue starts flowing 💰💰💰
 ```
 
-### Pro User Flow (Document Upload)
+**KEY INSIGHT:** Free tier is TOO LIMITED to be useful. Forces upgrade fast. Most will go Pro ($9.99), power users go Pro Plus ($29.99).
+
+### Pro User Flow (Regular User)
+
+```
+1. Pro user opens app
+2. Taps "+" to create new deck
+3. Creates unlimited decks with 20 slides each
+4. Exports to PowerPoint (no watermark)
+5. Happy customer, keeps paying $9.99/month 💰
+```
+
+### Pro Plus User Flow (Document Upload)
 
 ```
 1. Pro user opens app
@@ -486,61 +534,110 @@ Views/
 
 ---
 
-## 💰 REVENUE PROJECTIONS
+## 💰 REVENUE PROJECTIONS (NEW PRICING)
+
+### Why This Pricing Works 🔥
+
+**Free tier = 1 deck TOTAL**
+- Users try it, love it, immediately need more
+- Can't do anything with 1 deck
+- FORCED to upgrade
+
+**Pro tier = $9.99/month**
+- LOW barrier to entry
+- Most users will pay this (80% of paid users)
+- Easy impulse purchase
+
+**Pro Plus tier = $29.99/month**
+- For power users who need document upload
+- Accelerator applicants (YC, NVIDIA)
+- 20% of paid users will upgrade to this
+
+---
 
 ### Conservative Estimates
 
 **Assumptions:**
 - 10,000 monthly active users (MAU)
-- 5% free-to-paid conversion rate
-- $29/month Pro subscription
-- 80% monthly retention
+- 15% free-to-paid conversion (higher because free tier sucks 😈)
+- 80% go Pro ($9.99/month), 20% go Pro Plus ($29.99/month)
+- 85% monthly retention
 
 **Monthly Recurring Revenue (MRR):**
-- Paid users: 10,000 × 5% = 500
-- MRR: 500 × $29 = $14,500/month
-- ARR: $14,500 × 12 = $174,000/year
+- Paid users: 10,000 × 15% = 1,500
+- Pro users: 1,500 × 80% = 1,200 × $9.99 = $11,988
+- Pro Plus users: 1,500 × 20% = 300 × $29.99 = $8,997
+- Total MRR: $20,985/month
+- ARR: $251,820/year
 
 **With Growth:**
-- Month 6: 25,000 MAU → $36,250 MRR
-- Month 12: 50,000 MAU → $72,500 MRR
-- Year 1 ARR: ~$500,000
+- Month 6: 25,000 MAU → $52,462 MRR
+- Month 12: 50,000 MAU → $104,925 MRR
+- Year 1 ARR: ~$750,000
 
-### Aggressive Estimates
+---
+
+### Aggressive Estimates (Viral Growth)
 
 **Assumptions:**
 - 50,000 MAU
-- 10% conversion rate
-- $29/month Pro
-- 85% retention
-- 20% take yearly plan ($249/year)
+- 20% conversion rate (free tier is useless, people NEED to upgrade)
+- 75% go Pro ($9.99), 25% go Pro Plus ($29.99)
+- 90% retention (product is addictive)
+- 15% take yearly plans
 
 **MRR:**
-- Paid users: 5,000
-- Monthly: 4,000 × $29 = $116,000
-- Yearly: 1,000 × ($249/12) = $20,750
-- Total MRR: $136,750
-- ARR: ~$1.64M
+- Paid users: 10,000
+- Pro: 7,500 × $9.99 = $74,925
+- Pro Plus: 2,500 × $29.99 = $74,975
+- Yearly ARR contribution: +$200k
+- Total MRR: $149,900
+- ARR: ~$1.8M
+
+**Year 2 (Product-Market Fit):**
+- 200,000 MAU
+- 15% conversion = 30,000 paid
+- MRR: $450,000
+- ARR: $5.4M 🚀🚀🚀
 
 ---
 
 ## 🎉 STATUS: COMPLETE
 
-✅ **Free tier** - 3 decks/month, limited features  
-✅ **Pro tier** - Unlimited decks, document upload, advanced AI  
+✅ **Free tier** - 1 deck TOTAL (aggressive conversion strategy)  
+✅ **Pro tier ($9.99)** - Unlimited decks, low barrier entry  
+✅ **Pro Plus tier ($29.99)** - Document upload, elite AI, accelerator features  
 ✅ **Feature gating** - Smart limits & prompts  
 ✅ **Paywall** - Beautiful upgrade flow  
-✅ **Document upload** - File picker, progress, analysis  
+✅ **Document upload** - File picker, progress, analysis (Pro Plus)  
 ✅ **GPT-4/5 integration** - Ready for production API  
-✅ **Usage tracking** - Monthly limits & resets  
+✅ **Usage tracking** - Deck limits & enforcement  
 ✅ **UI components** - Pro badges, banners, cards  
 ✅ **BUILD: SUCCESSFUL** - Zero errors, production-ready  
 
 ---
 
-**YOUR APP NOW HAS A COMPLETE FREEMIUM SYSTEM!** 🔥💰
+## 💰 THE STRATEGY
 
-Free users get a taste → Love it → Hit limits → Upgrade to Pro → Unlimited power! 🚀
+**Free tier = USELESS** (1 deck only)
+→ Try app, love it, realize you need more
+→ See paywall immediately
 
-Ready to integrate RevenueCat and start making money! 💵💵💵
+**Pro tier = AFFORDABLE** ($9.99)
+→ Most users upgrade here
+→ 80% of paid revenue
+→ Unlimited decks, PowerPoint export, no watermark
+
+**Pro Plus = PREMIUM** ($29.99)
+→ Power users, raising funding
+→ 20% of paid revenue
+→ Document upload, elite AI, accelerator templates
+
+**Result = MAXIMUM REVENUE** 🔥💰🚀
+
+Free users upgrade fast → Pay $9.99 or $29.99 → Monthly recurring revenue flows! 💵💵💵
+
+---
+
+**READY TO MAKE BANK!** 💰💰💰
 

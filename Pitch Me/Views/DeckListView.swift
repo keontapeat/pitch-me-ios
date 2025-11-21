@@ -73,7 +73,7 @@ struct DeckListView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("You've reached your monthly limit of \(subscriptionService.currentTier.maxDecksPerMonth) decks. Upgrade to Pro for unlimited decks.")
+                Text("You've used your free deck! Upgrade to Pro for unlimited decks starting at just $9.99/month.")
             }
         }
     }

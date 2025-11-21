@@ -124,7 +124,7 @@ struct WizardContainerView: View {
         }
         .onAppear {
             // Load subscription status
-            SubscriptionService.shared.loadSubscriptionStatus()
+            SubscriptionService.shared.loadSubscriptionTier()
         }
     }
     
