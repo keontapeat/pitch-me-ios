@@ -1,0 +1,98 @@
+# Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.pins
+Package.resolved
+
+# CocoaPods (if using)
+Pods/
+*.xcworkspace
+
+# Carthage (if using)
+Carthage/Build/
+
+# Firebase
+GoogleService-Info.plist
+google-services.json
+
+# Environment
+.env
+.env.local
+.env.production
+
+# API Keys & Secrets
+**/secrets.json
+**/api_keys.json
+*.config
+*.plist.secret
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# VS Code
+.vscode/
+
+# Cursor
+.cursor/
+
+# Ruby (fastlane, etc)
+*.gem
+.bundle
+vendor/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# App Store
+*.mobileprovision
+*.certSigningRequest
+*.p12
+*.cer
+
+# TestFlight
+builds/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+
+# RevenueCat
+RevenueCat.plist
+

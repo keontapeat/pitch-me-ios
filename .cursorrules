@@ -1,0 +1,1231 @@
+# 🔥🔥🔥 PITCH ME - THERMONUCLEAR CURSOR RULES 🔥🔥🔥
+# THE MOST POWERFUL AI PITCH DECK APP IN THE UNIVERSE
+# Version 2.0 - Updated with ALL production features
+
+## ═══════════════════════════════════════════════════════════════
+## MISSION: BUILD THE #1 PITCH DECK APP IN THE WORLD
+## ═══════════════════════════════════════════════════════════════
+
+We are building THE definitive pitch deck app that helps founders:
+- Get into Y Combinator, NVIDIA Inception, Techstars
+- Raise millions in funding
+- Create decks in MINUTES, not days
+- Use AI to extract data from documents
+- Export to any format
+
+**Every line of code matters. We're changing how founders pitch.**
+
+## ═══════════════════════════════════════════════════════════════
+## CORE PRINCIPLES (NEVER COMPROMISE)
+## ═══════════════════════════════════════════════════════════════
+
+1. **SCALE FROM DAY ONE** - Architecture for millions of users
+2. **APPLE-QUALITY UX** - Premium feel, smooth animations, delightful
+3. **SECURITY FIRST** - User data is sacred. Encrypt everything.
+4. **PERFORMANCE IS A FEATURE** - Fast is better than slow. Always.
+5. **CLEAN CODE** - If it's hard to read, it's wrong
+6. **SHIP FAST, ITERATE** - Done is better than perfect
+7. **USER-FIRST** - Every feature must solve a real problem
+
+## ═══════════════════════════════════════════════════════════════
+## SWIFT & iOS DEVELOPMENT STANDARDS
+## ═══════════════════════════════════════════════════════════════
+
+### Language Requirements
+- **Swift 5.9+** ONLY - Use latest features
+- **SwiftUI** for all UI - No UIKit unless absolutely necessary
+- **async/await** for ALL async operations - No callbacks
+- **Protocol-oriented** - Protocols over inheritance
+- **Value types** (struct) over reference types (class) by default
+- Use `final` on classes that won't be subclassed
+- **Prefer `let` over `var`** - Immutability prevents bugs
+
+### Naming Conventions (Apple Style Guide)
+```swift
+// Variables & Functions: camelCase
+func generateDeck(from: WizardState) async throws -> Deck
+let isGenerating: Bool
+var deckCount: Int
+
+// Types: PascalCase
+struct DeckGenerationService { }
+class WizardViewModel: ObservableObject { }
+enum SubscriptionTier { }
+
+// Booleans: is/has/should/can prefix
+let isLoading: Bool
+let hasCompletedOnboarding: Bool
+let shouldShowPaywall: Bool
+let canAccessFeature: Bool
+
+// Methods: Start with verbs
+func uploadDocument() async throws
+func validateInput() -> Bool
+func incrementDeckCount()
+
+// Constants: Descriptive camelCase
+let maxSlideCount = 30
+let defaultTimeout: TimeInterval = 10.0
+
+// Enums: Lowercase cases
+enum DeckUseCase {
+    case investor  // ✅ Good
+    case Investor  // ❌ Bad
+}
+```
+
+### Architecture: MVVM + Services
+
+```
+Views/ (SwiftUI)
+├── DeckListView.swift          # UI ONLY, no business logic
+├── DeckDetailView.swift
+├── WizardContainerView.swift
+└── Components/
+    ├── InputField.swift
+    └── PrimaryButton.swift
+
+ViewModels/ (@MainActor + ObservableObject)
+├── DeckListViewModel.swift     # Business logic, @Published properties
+├── DeckDetailViewModel.swift
+└── WizardViewModel.swift
+
+Models/ (Codable structs)
+├── Deck.swift                  # Pure data, no logic
+├── Slide.swift
+├── Theme.swift
+├── SubscriptionTier.swift
+└── AcceleratorTemplate.swift
+
+Services/ (Protocol-based)
+├── Firebase/
+│   ├── AuthService.swift       # Firebase Auth wrapper
+│   ├── FirestoreService.swift  # Database operations
+│   └── StorageService.swift    # File uploads
+├── AI/
+│   ├── DeckGenerationService.swift      # GPT-4/5 deck generation
+│   └── EliteDocumentAnalyzer.swift      # Document analysis
+├── SubscriptionService.swift   # RevenueCat/StoreKit
+└── DocumentUploadService.swift # Document processing
+```
+
+### SwiftUI Best Practices
+
+```swift
+// ✅ CORRECT: Clean, readable, performant
+struct DeckListView: View {
+    @StateObject private var viewModel = DeckListViewModel()
+    @State private var showingWizard = false
+    
+    var body: some View {
+        NavigationStack {
+            deckList
+                .navigationTitle("My Decks")
+                .toolbar { toolbar }
+        }
+        .sheet(isPresented: $showingWizard) {
+            WizardContainerView()
+        }
+    }
+    
+    private var deckList: some View {
+        List(viewModel.decks) { deck in
+            DeckCard(deck: deck)
+        }
+    }
+    
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button { showingWizard = true } label: {
+                Image(systemName: "plus.circle.fill")
+            }
+        }
+    }
+}
+
+// ❌ WRONG: Massive body, hard to read
+struct DeckListView: View {
+    var body: some View {
+        // 500 lines of code here...
+    }
+}
+```
+
+**State Management:**
+- `@State` - View-local state (private)
+- `@StateObject` - View creates the ObservableObject
+- `@ObservedObject` - Parent passes the ObservableObject
+- `@EnvironmentObject` - App-wide shared state (use sparingly)
+- `@Published` - In ViewModels for reactive updates
+
+### Concurrency (async/await)
+
+```swift
+// ✅ CORRECT: Clean async/await
+@MainActor
+func generateDeck() async throws {
+    isLoading = true
+    defer { isLoading = false }
+    
+    let deck = try await deckService.generate(from: wizardState)
+    generatedDeck = deck
+}
+
+// ❌ WRONG: Completion handlers (old style)
+func generateDeck(completion: @escaping (Result<Deck, Error>) -> Void) {
+    // Don't do this anymore
+}
+```
+
+**Concurrency Rules:**
+- Mark ViewModels with `@MainActor` - UI updates on main thread
+- Use `Task { }` for fire-and-forget work
+- Use `async let` for concurrent operations
+- Use `TaskGroup` for multiple concurrent ops with results
+- ALWAYS handle cancellation
+- Use `.task { }` modifier for view-scoped async work
+
+### Error Handling
+
+```swift
+// ✅ CORRECT: Custom errors, clear messages
+enum DeckGenerationError: Error, LocalizedError {
+    case invalidInput(String)
+    case aiServiceUnavailable
+    case networkTimeout
+    
+    var errorDescription: String? {
+        switch self {
+        case .invalidInput(let field):
+            return "Please provide valid \(field)"
+        case .aiServiceUnavailable:
+            return "AI service is temporarily unavailable"
+        case .networkTimeout:
+            return "Request timed out. Check your connection."
+        }
+    }
+}
+
+// Use throws for errors that should propagate
+func uploadDocument(url: URL) async throws -> DocumentUpload
+
+// Use Result for operations that can fail
+func validateWizardState() -> Result<Void, ValidationError>
+
+// ❌ WRONG: Generic errors, no context
+throw NSError(domain: "Error", code: -1, userInfo: nil)
+```
+
+**Error UI Rules:**
+- ALWAYS show user-friendly messages (never raw errors)
+- Provide actionable solutions ("Try again" button)
+- Log errors to Crashlytics with context
+- Never fail silently
+
+## ═══════════════════════════════════════════════════════════════
+## FIREBASE INTEGRATION (PRODUCTION READY)
+## ═══════════════════════════════════════════════════════════════
+
+### Firebase Setup
+```swift
+// AppDelegate or @main App
+import Firebase
+import FirebaseFirestore
+import FirebaseAuth
+import FirebaseStorage
+import FirebaseCrashlytics
+import FirebaseAnalytics
+
+@main
+struct PitchMeApp: App {
+    init() {
+        FirebaseApp.configure()
+        
+        // Enable offline persistence
+        let settings = FirestoreSettings()
+        settings.isPersistenceEnabled = true
+        Firestore.firestore().settings = settings
+    }
+}
+```
+
+### Firestore Collection Structure
+```
+users/{userId}
+  ├── email: String
+  ├── subscription: String (free, pro, enterprise)
+  ├── createdAt: Timestamp
+  └── decks (subcollection)
+      └── {deckId}
+          ├── title: String
+          ├── useCase: String
+          ├── themeId: String
+          ├── storyScore: Int?
+          ├── createdAt: Timestamp
+          ├── updatedAt: Timestamp
+          └── slides (subcollection)
+              └── {slideId}
+                  ├── index: Int
+                  ├── layoutType: String
+                  ├── title: String
+                  ├── bullets: [String]
+                  ├── speakerNotes: String?
+                  └── createdAt: Timestamp
+
+exports/{exportId}
+  ├── userId: String
+  ├── deckId: String
+  ├── format: String (pdf, pptx, google_slides)
+  ├── status: String (queued, processing, done, failed)
+  ├── fileUrl: String?
+  └── createdAt: Timestamp
+
+uploads/{uploadId}
+  ├── userId: String
+  ├── fileName: String
+  ├── fileSize: Int
+  ├── status: String
+  └── analysisResult: Map
+```
+
+### Firestore Security Rules (COPY TO FIREBASE CONSOLE)
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Users can only access their own data
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      
+      match /decks/{deckId} {
+        allow read, write: if isOwner(userId);
+        
+        match /slides/{slideId} {
+          allow read, write: if isOwner(userId);
+        }
+      }
+    }
+    
+    // Exports - user can only read their own
+    match /exports/{exportId} {
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Uploads - user can only access their own
+    match /uploads/{uploadId} {
+      allow read, write: if isAuthenticated() && 
+                            resource.data.userId == request.auth.uid;
+    }
+  }
+}
+```
+
+### Storage Security Rules
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Users can only access their own files
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && 
+                           request.auth.uid == userId;
+    }
+    
+    // Size limit: 50MB
+    match /{allPaths=**} {
+      allow write: if request.resource.size < 50 * 1024 * 1024;
+    }
+  }
+}
+```
+
+## ═══════════════════════════════════════════════════════════════
+## VERTEX AI + GEMINI 2.0 INTEGRATION
+## ═══════════════════════════════════════════════════════════════
+
+### Architecture: iOS → Cloud Functions → Vertex AI
+
+**NEVER call Vertex AI directly from iOS**. Always use Cloud Functions.
+
+### Cloud Function Example (TypeScript)
+
+```typescript
+// functions/src/generateDeck.ts
+import * as functions from 'firebase-functions';
+import { VertexAI } from '@google-cloud/vertexai';
+
+const vertexAI = new VertexAI({
+  project: 'your-project-id',
+  location: 'us-central1'
+});
+
+export const generateDeck = functions.https.onCall(async (data, context) => {
+  // Authenticate
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+  
+  // Check subscription
+  const userDoc = await admin.firestore()
+    .collection('users')
+    .doc(context.auth.uid)
+    .get();
+    
+  const subscription = userDoc.data()?.subscription || 'free';
+  
+  // Free tier limits
+  if (subscription === 'free') {
+    const decksThisMonth = await getDecksCreatedThisMonth(context.auth.uid);
+    if (decksThisMonth >= 3) {
+      throw new functions.https.HttpsError(
+        'resource-exhausted',
+        'Monthly deck limit reached. Upgrade to Pro.'
+      );
+    }
+  }
+  
+  const { wizardState } = data;
+  
+  // Call Gemini 2.0 Flash
+  const model = vertexAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    systemInstruction: ELITE_DECK_GENERATION_PROMPT
+  });
+  
+  const result = await model.generateContent({
+    contents: [{
+      role: 'user',
+      parts: [{ text: JSON.stringify(wizardState) }]
+    }],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 4096,
+      responseMimeType: 'application/json'
+    }
+  });
+  
+  const deckData = JSON.parse(result.response.text());
+  
+  // Save to Firestore
+  const deckRef = await admin.firestore()
+    .collection('users')
+    .doc(context.auth.uid)
+    .collection('decks')
+    .add({
+      ...deckData,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  
+  // Track usage
+  await admin.firestore()
+    .collection('users')
+    .doc(context.auth.uid)
+    .update({
+      decksCreatedThisMonth: admin.firestore.FieldValue.increment(1)
+    });
+  
+  return { deckId: deckRef.id };
+});
+
+const ELITE_DECK_GENERATION_PROMPT = `
+You are an elite pitch deck consultant who has helped 1000+ startups raise funding.
+
+Generate a professional, investor-ready pitch deck optimized for the specified use case.
+
+INPUT: JSON with startup information
+OUTPUT: JSON with 10-12 slides
+
+Slide structure:
+- Title slide (company name + one-liner)
+- Problem (WHO has it, HOW painful, quantify)
+- Solution (WHAT you built, WHY 10X better)
+- Market (TAM/SAM/SOM, growth rate)
+- Product (demo/screenshots if possible)
+- Business Model (revenue streams, unit economics)
+- Traction (metrics, growth, momentum)
+- Competition (your moat/differentiation)
+- Team (credentials, why you'll win)
+- Roadmap (next 12-24 months)
+- Ask (if investor deck: funding amount + use of funds)
+
+Make it compelling, concise, and story-driven.
+Include speaker notes with presentation tips.
+`;
+```
+
+### iOS Service
+
+```swift
+final class DeckGenerationService {
+    static let shared = DeckGenerationService()
+    
+    func generateDeck(from state: WizardState) async throws -> String {
+        guard let currentUser = Auth.auth().currentUser else {
+            throw DeckGenerationError.notAuthenticated
+        }
+        
+        let callable = Functions.functions().httpsCallable("generateDeck")
+        
+        let data: [String: Any] = [
+            "wizardState": state.toDictionary()
+        ]
+        
+        do {
+            let result = try await callable.call(data)
+            guard let deckId = result.data as? String else {
+                throw DeckGenerationError.invalidResponse
+            }
+            return deckId
+        } catch let error as NSError {
+            if error.domain == "FunctionsErrorDomain" {
+                // Handle specific function errors
+                throw mapFirebaseFunctionError(error)
+            }
+            throw error
+        }
+    }
+}
+```
+
+## ═══════════════════════════════════════════════════════════════
+## SUBSCRIPTION & MONETIZATION (FREEMIUM)
+## ═══════════════════════════════════════════════════════════════
+
+### Tier Structure
+
+**FREE TIER**
+- 3 decks/month
+- Up to 10 slides/deck
+- Basic AI (Gemini Flash)
+- PDF export only
+- 3 themes
+- Community support
+
+**PRO TIER ($29/month or $249/year)**
+- Unlimited decks
+- Up to 30 slides/deck
+- Advanced AI (GPT-4/5)
+- Document upload & analysis
+- Export to PowerPoint, Google Slides, PDF
+- All premium themes
+- AI story feedback
+- Priority support
+- No watermarks
+- 7-day free trial
+
+**ENTERPRISE (Custom pricing)**
+- Everything in Pro
+- Unlimited slides
+- Custom branding
+- Team collaboration
+- API access
+- Dedicated account manager
+- SLA
+
+### RevenueCat Integration
+
+```swift
+import RevenueCat
+
+// Configure on app launch
+Purchases.logLevel = .debug
+Purchases.configure(withAPIKey: "your_revenuecat_api_key")
+
+// Purchase
+func upgradeToPro() async throws {
+    let offerings = try await Purchases.shared.offerings()
+    guard let proPackage = offerings.current?.monthly else {
+        throw SubscriptionError.packageNotFound
+    }
+    
+    let (_, customerInfo, _) = try await Purchases.shared.purchase(package: proPackage)
+    
+    if customerInfo.entitlements["pro"]?.isActive == true {
+        currentTier = .pro
+    }
+}
+
+// Check entitlement
+func canAccessFeature(_ feature: Feature) -> Bool {
+    let customerInfo = Purchases.shared.cachedCustomerInfo
+    
+    switch feature {
+    case .uploadDocuments:
+        return customerInfo?.entitlements["pro"]?.isActive == true
+    case .advancedAI:
+        return customerInfo?.entitlements["pro"]?.isActive == true
+    default:
+        return true
+    }
+}
+```
+
+### Feature Gating Pattern
+
+```swift
+// In any view
+if subscriptionService.canAccessFeature(.uploadDocuments) {
+    // Show feature
+    DocumentUploadView()
+} else {
+    // Show upgrade prompt
+    ProFeatureBanner {
+        showPaywall = true
+    }
+}
+```
+
+## ═══════════════════════════════════════════════════════════════
+## DOCUMENT UPLOAD & AI ANALYSIS (PRO FEATURE)
+## ═══════════════════════════════════════════════════════════════
+
+### Upload Flow
+
+1. User selects document (PDF, Word, PowerPoint)
+2. Upload to Firebase Storage
+3. Extract text (PDFKit for PDF, etc.)
+4. Send to Cloud Function for GPT-4 analysis
+5. Parse structured data
+6. Auto-fill wizard state
+7. User reviews and generates deck
+
+### Elite Document Analysis Prompt
+
+```
+You are an elite startup advisor analyzing documents for Y Combinator applications.
+
+Extract EVERY piece of valuable information with EXTREME precision.
+
+EXTRACT:
+1. Company Basics (name, industry, one-liner, stage)
+2. Problem (WHO, HOW painful, quantify, timing)
+3. Solution (WHAT, HOW, WHY 10X better, unique insight)
+4. Market (TAM/SAM/SOM with calculations, growth rate)
+5. Traction (revenue, users, growth, metrics, milestones)
+6. Competition (competitors, differentiation, moat)
+7. Team (founders, experience, credentials, advisors)
+8. Financial (funding, burn, runway, unit economics)
+9. Technical (AI/ML approach, GPU needs, architecture)
+10. Ask (amount, use of funds, milestones)
+
+Return as structured JSON. Be SPECIFIC - extract numbers, names, metrics.
+```
+
+### Accelerator Scoring
+
+For Y Combinator, NVIDIA Inception, etc., score the deck on:
+- Market size (is it $1B+?)
+- Team quality (founder credentials, domain expertise)
+- Traction (growth, momentum, product-market fit)
+- Technical depth (for AI companies)
+- Clarity (can you explain it simply?)
+- 10X better (vs alternatives)
+
+Return score 0-100 + strengths + weaknesses + recommendations.
+
+## ═══════════════════════════════════════════════════════════════
+## UI/UX STANDARDS (APPLE-LEVEL QUALITY)
+## ═══════════════════════════════════════════════════════════════
+
+### Design System
+
+**Colors:**
+```swift
+.pitchLime         // #BFFF00 (primary accent)
+.pitchCharcoal     // #1C1C1E (dark brand)
+.pitchBackground   // Adaptive light/dark
+.pitchTextAdaptive // Readable in all modes
+```
+
+**Typography:**
+```swift
+Typography.displayLarge    // 48pt, bold
+Typography.titleLarge      // 24pt, semibold
+Typography.bodyLarge       // 17pt, regular
+Typography.labelLarge      // 15pt, medium
+```
+
+**Spacing:**
+```swift
+Spacing.xs      // 4pt
+Spacing.base    // 16pt
+Spacing.xl      // 24pt
+Spacing.xxxl    // 40pt
+```
+
+### Animation Principles
+
+- **Spring animations** for organic feel (`response: 0.4, dampingFraction: 0.8`)
+- Keep animations **< 300ms** for responsiveness
+- Use `.animation()` on specific properties only
+- Add **haptic feedback** for important actions
+- Respect **reduce motion** accessibility setting
+
+```swift
+// ✅ CORRECT: Smooth, performant animation
+withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+    selectedIndex = newIndex
+}
+
+// Add haptic
+let impact = UIImpactFeedbackGenerator(style: .medium)
+impact.impactOccurred()
+```
+
+### Accessibility Requirements
+
+- `.accessibilityLabel()` on all interactive elements
+- `.accessibilityHint()` when action isn't obvious
+- Support **VoiceOver** navigation
+- Support **Dynamic Type** (scalable text)
+- **44pt minimum** tap targets
+- Proper color contrast (WCAG AA)
+- Test with Accessibility Inspector
+
+## ═══════════════════════════════════════════════════════════════
+## PERFORMANCE & OPTIMIZATION
+## ═══════════════════════════════════════════════════════════════
+
+### Performance Budgets
+- App launch: **< 2 seconds** to interactive
+- Screen transitions: **< 300ms**
+- API calls: **< 3 seconds** (with loading state)
+- List scrolling: **60 FPS** minimum
+- Memory usage: **< 150MB** on iPhone SE
+- App size: **< 50MB** after app thinning
+
+### Optimization Techniques
+
+```swift
+// ✅ Use Identifiable + stable IDs for List performance
+struct Deck: Identifiable {
+    let id: String  // Stable, unique ID
+}
+
+// ✅ Lazy load images
+AsyncImage(url: imageURL) { image in
+    image.resizable()
+} placeholder: {
+    ProgressView()
+}
+
+// ✅ Cache expensive computations
+@State private var cachedValue: String = ""
+
+// ✅ Use background queues for heavy work
+Task.detached(priority: .background) {
+    let result = await heavyComputation()
+    await MainActor.run {
+        self.result = result
+    }
+}
+```
+
+## ═══════════════════════════════════════════════════════════════
+## TESTING STRATEGY
+## ═══════════════════════════════════════════════════════════════
+
+### Unit Tests (80%+ coverage on business logic)
+
+```swift
+// Test ViewModels
+class WizardViewModelTests: XCTestCase {
+    func test_goToNextStep_whenCanGoForward_incrementsStep() {
+        let vm = WizardViewModel()
+        vm.state.startupName = "Test"
+        vm.state.oneLiner = "Test description"
+        
+        vm.goToNextStep()
+        
+        XCTAssertEqual(vm.currentStep, .problem)
+    }
+}
+
+// Test Services
+class DeckGenerationServiceTests: XCTestCase {
+    func test_generateDeck_withValidState_returnsDeck() async throws {
+        let service = DeckGenerationService()
+        let state = WizardState.mock()
+        
+        let deckId = try await service.generateDeck(from: state)
+        
+        XCTAssertFalse(deckId.isEmpty)
+    }
+}
+```
+
+### UI Tests (Critical user flows)
+
+```swift
+func test_createDeckFlow_completesSuccessfully() throws {
+    let app = XCUIApplication()
+    app.launch()
+    
+    // Tap new deck
+    app.buttons["plus.circle.fill"].tap()
+    
+    // Complete wizard
+    app.textFields["Startup Name"].tap()
+    app.textFields["Startup Name"].typeText("Test Corp")
+    
+    app.buttons["Continue"].tap()
+    // ... complete flow
+    
+    // Verify deck created
+    XCTAssertTrue(app.staticTexts["Test Corp"].exists)
+}
+```
+
+## ═══════════════════════════════════════════════════════════════
+## SECURITY REQUIREMENTS (NON-NEGOTIABLE)
+## ═══════════════════════════════════════════════════════════════
+
+### Data Security
+- **NEVER** hardcode API keys (use Firebase Remote Config)
+- Use **Keychain** for tokens/credentials
+- Validate **ALL** user input
+- Sanitize data before display
+- Enable **App Transport Security** (HTTPS only)
+- Implement **certificate pinning** for production
+
+### Firebase Security
+```swift
+// ✅ ALWAYS check auth before operations
+guard let userId = Auth.auth().currentUser?.uid else {
+    throw AuthError.notAuthenticated
+}
+
+// ✅ ALWAYS use user-specific paths
+let deckRef = db.collection("users").document(userId)
+                .collection("decks").document(deckId)
+
+// ❌ NEVER allow access to other users' data
+let deckRef = db.collection("decks").document(deckId)  // WRONG!
+```
+
+## ═══════════════════════════════════════════════════════════════
+## GIT & VERSION CONTROL
+## ═══════════════════════════════════════════════════════════════
+
+### Commit Message Format
+```
+feat: Add document upload for Pro users
+fix: Resolve crash on slide deletion
+perf: Optimize deck list rendering
+refactor: Extract slide carousel component
+docs: Update Firebase setup guide
+test: Add unit tests for WizardViewModel
+```
+
+### .gitignore (CRITICAL)
+```
+# Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/
+
+# Firebase
+GoogleService-Info.plist
+.env
+*.config
+
+# Swift Package Manager
+.swiftpm/
+
+# Secrets
+**/secrets.json
+**/api_keys.json
+
+# macOS
+.DS_Store
+```
+
+## ═══════════════════════════════════════════════════════════════
+## APP STORE SUBMISSION REQUIREMENTS
+## ═══════════════════════════════════════════════════════════════
+
+### Pre-Submission Checklist
+- [ ] Privacy Policy URL (required)
+- [ ] Terms of Service URL (required)
+- [ ] Support URL (required)
+- [ ] App screenshots (3-5 per device size)
+- [ ] App description & keywords
+- [ ] IAP products configured
+- [ ] RevenueCat integrated
+- [ ] TestFlight beta testing done
+- [ ] No crashes or critical bugs
+- [ ] All features working
+- [ ] Performance profiled
+
+### App Store Metadata
+- **Name:** Pitch Me - AI Pitch Decks
+- **Subtitle:** Create Investor-Ready Decks in Minutes
+- **Category:** Business, Productivity
+- **Keywords:** pitch deck, investor, startup, ai, presentation
+- **Age Rating:** 4+
+- **Price:** Free (with IAP)
+
+## ═══════════════════════════════════════════════════════════════
+## AI-SPECIFIC RULES FOR CURSOR (YOU!)
+## ═══════════════════════════════════════════════════════════════
+
+When implementing features:
+
+1. **UNDERSTAND & PLAN** - Restate in bullet points before coding
+2. **IMPLEMENT COMPLETELY** - No half-baked features or TODOs
+3. **INCLUDE ALL IMPORTS** - Foundation, SwiftUI, Combine, etc.
+4. **ADD MARK COMMENTS** - Organize code sections
+5. **WRITE SWIFTUI PREVIEWS** - For every view
+6. **HANDLE ERRORS PROPERLY** - No force unwraps, no force try
+7. **FOLLOW CONVENTIONS** - Use the patterns established in codebase
+8. **CHECK YOUR WORK** - Build must succeed, no warnings
+9. **UPDATE TODOS** - Track progress, complete tasks
+10. **DOCUMENT DECISIONS** - Add comments for WHY, not WHAT
+
+### Code Review Checklist
+- ✅ Is it readable?
+- ✅ Is it testable?
+- ✅ Is it performant?
+- ✅ Is it secure?
+- ✅ Does it follow these rules?
+
+## ═══════════════════════════════════════════════════════════════
+## XCODE BUILD OPTIMIZATION (FASTEST BUILDS IN THE WORLD)
+## ═══════════════════════════════════════════════════════════════
+
+### Build Settings for MAXIMUM SPEED
+
+**In Xcode Build Settings:**
+
+```
+# Compilation Settings
+SWIFT_COMPILATION_MODE = Incremental (Debug), Whole Module (Release)
+SWIFT_OPTIMIZATION_LEVEL = -Onone (Debug), -O (Release)
+SWIFT_WHOLE_MODULE_OPTIMIZATION = YES (Release only)
+COMPILER_INDEX_STORE_ENABLE = NO (for faster builds)
+DEBUG_INFORMATION_FORMAT = dwarf (Debug), dwarf-with-dsym (Release)
+
+# Parallel Builds
+ENABLE_ONLY_ACTIVE_RESOURCES = YES
+ENABLE_PARALLEL_TESTING = YES
+
+# Speed Optimizations
+GCC_OPTIMIZATION_LEVEL = 0 (Debug), s (Release)
+ENABLE_BITCODE = NO
+ENABLE_TESTABILITY = YES (Debug only)
+
+# Module Settings
+DEFINES_MODULE = YES
+CLANG_ENABLE_MODULES = YES
+CLANG_ENABLE_MODULE_DEBUGGING = YES
+
+# Link Time Optimization
+LLVM_LTO = NO (Debug), monolithic (Release)
+```
+
+### Terminal Commands for LIGHTNING FAST Builds
+
+```bash
+# Clean build (when needed)
+xcodebuild clean -project "Pitch Me.xcodeproj" -scheme "Pitch Me"
+
+# Fast incremental build
+xcodebuild build -project "Pitch Me.xcodeproj" -scheme "Pitch Me" -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15' -parallelizeTargets
+
+# Build with detailed timing
+xcodebuild build -project "Pitch Me.xcodeproj" -scheme "Pitch Me" -showBuildTimingSummary
+
+# Archive for release
+xcodebuild archive -project "Pitch Me.xcodeproj" -scheme "Pitch Me" -archivePath ./build/PitchMe.xcarchive
+
+# Export IPA
+xcodebuild -exportArchive -archivePath ./build/PitchMe.xcarchive -exportPath ./build -exportOptionsPlist ExportOptions.plist
+```
+
+### Xcode Shortcuts (SPEED DEMONS ONLY)
+
+```
+⌘B          - Build
+⌘R          - Run
+⌘.          - Stop
+⌘K          - Clear console
+⌘⇧K         - Clean build folder
+⌘⇧O         - Open quickly (navigate to file)
+⌘⇧J         - Reveal in project navigator
+⌘⌥[         - Move line up
+⌘⌥]         - Move line down
+⌘/          - Comment/uncomment
+⌘⌃E         - Edit all in scope
+⌘⌥⇧K        - Clean derived data (nuclear option)
+```
+
+### Derived Data Management
+
+```bash
+# Location of derived data
+~/Library/Developer/Xcode/DerivedData
+
+# Clear derived data (when builds are weird)
+rm -rf ~/Library/Developer/Xcode/DerivedData
+
+# Set custom derived data location (for faster builds on SSD)
+# Xcode → Settings → Locations → Derived Data → Custom
+```
+
+### Simulator Management
+
+```bash
+# List all simulators
+xcrun simctl list
+
+# Boot simulator
+xcrun simctl boot "iPhone 15"
+
+# Reset simulator (fixes many issues)
+xcrun simctl erase all
+
+# Delete unavailable simulators
+xcrun simctl delete unavailable
+```
+
+### Debug Faster
+
+```swift
+// MARK: - Debug Helpers
+
+#if DEBUG
+// Print with file and line
+func debugPrint(_ message: String, file: String = #file, line: Int = #line) {
+    print("[\(file.components(separatedBy: "/").last ?? ""):\(line)] \(message)")
+}
+
+// Measure execution time
+func measure(_ label: String, block: () -> Void) {
+    let start = CFAbsoluteTimeGetCurrent()
+    block()
+    let duration = CFAbsoluteTimeGetCurrent() - start
+    print("⏱️ \(label): \(duration)s")
+}
+#endif
+```
+
+### Breakpoint Tricks
+
+```
+# Symbolic breakpoint for all exceptions
+Exception: All
+Action: Log message
+
+# Breakpoint on method
+-[UIViewController viewDidLoad]
+
+# Conditional breakpoint
+Condition: count > 100
+```
+
+### Instruments (Profiling)
+
+```bash
+# Profile app launch time
+instruments -t "App Launch" -D launch.trace YourApp.app
+
+# Profile memory leaks
+instruments -t "Leaks" -D leaks.trace YourApp.app
+
+# Profile time profiler
+instruments -t "Time Profiler" -D profile.trace YourApp.app
+```
+
+### Build Optimization Checklist
+
+Before Release:
+- [ ] Enable whole module optimization
+- [ ] Strip debug symbols
+- [ ] Enable bitcode (if needed)
+- [ ] Optimize PNG files
+- [ ] Remove unused code
+- [ ] Profile with Instruments
+- [ ] Test on real device
+- [ ] Check app size
+
+For Faster Debug Builds:
+- [ ] Disable optimization (`-Onone`)
+- [ ] Use dwarf (not dwarf-with-dsym)
+- [ ] Disable module optimization
+- [ ] Use incremental compilation
+- [ ] Keep derived data
+
+### Common Build Issues & Fixes
+
+```
+# "Module not found"
+→ Clean build folder (⌘⇧K)
+→ Delete derived data
+→ Restart Xcode
+
+# "Signing issues"
+→ Check bundle ID
+→ Update provisioning profile
+→ Enable automatic signing
+
+# "Simulator not available"
+→ Reset simulator
+→ Restart Xcode
+→ Check macOS/Xcode version
+
+# "Build takes forever"
+→ Check for circular dependencies
+→ Reduce Swift compilation complexity
+→ Use build time analyzer
+→ Break up large files
+
+# "Cannot install on device"
+→ Trust development certificate on device
+→ Check device iOS version
+→ Clean build and retry
+```
+
+### Git Integration with Xcode
+
+```bash
+# Initialize git (if not done)
+git init
+git add .
+git commit -m "Initial commit - Pitch Me v1.0"
+
+# Create .gitignore
+echo "DerivedData/
+*.xcuserstate
+xcuserdata/
+.DS_Store
+GoogleService-Info.plist
+.env" > .gitignore
+
+# Connect to remote
+git remote add origin https://github.com/yourusername/pitch-me.git
+git branch -M main
+git push -u origin main
+```
+
+### Swift Build Time Optimization
+
+```swift
+// ❌ SLOW: Complex type inference
+let numbers = [1, 2, 3].map { $0 * 2 }.filter { $0 > 2 }.map { $0 + 1 }
+
+// ✅ FAST: Break into steps
+let doubled = [1, 2, 3].map { $0 * 2 }
+let filtered = doubled.filter { $0 > 2 }
+let result = filtered.map { $0 + 1 }
+
+// ❌ SLOW: Large SwiftUI body
+var body: some View {
+    // 500 lines of code
+}
+
+// ✅ FAST: Extract to computed properties
+var body: some View {
+    content
+}
+
+private var content: some View {
+    // Extracted content
+}
+```
+
+### Xcode Preferences for Speed
+
+```
+Xcode → Settings → Behaviors
+- Build Starts: Hide navigator
+- Build Succeeds: Show navigator
+- Build Fails: Show issues
+
+Xcode → Settings → Text Editing
+- Enable syntax coloring
+- Enable code folding
+- Show line numbers
+
+Xcode → Settings → General
+- Reopen last project on launch: OFF (faster)
+```
+
+### Build Time Warnings
+
+Add build time warnings for slow files:
+
+```bash
+# In Build Settings → Other Swift Flags
+-Xfrontend -warn-long-function-bodies=500
+-Xfrontend -warn-long-expression-type-checking=500
+```
+
+This will warn you if any function takes > 500ms to compile.
+
+### CI/CD Fast Builds (GitHub Actions)
+
+```yaml
+name: Build & Test
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    - name: Cache SPM
+      uses: actions/cache@v2
+      with:
+        path: .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+    - name: Build
+      run: xcodebuild build -scheme "Pitch Me" -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15'
+```
+
+## ═══════════════════════════════════════════════════════════════
+## FINAL WORDS
+## ═══════════════════════════════════════════════════════════════
+
+**WE'RE BUILDING THE BEST PITCH DECK APP IN THE WORLD.**
+
+Every feature must:
+1. Solve a real problem
+2. Delight users
+3. Be fast & reliable
+4. Work flawlessly
+
+When in doubt:
+- Is it simple?
+- Is it secure?
+- Is it fast?
+- Does it delight users?
+
+**If YES to all → SHIP IT!** 🚀
+**If NO → FIX IT!** 🔧
+
+---
+
+**Remember:** Founders trust us with their dreams. We help them raise millions, get into accelerators, and change the world. This is not just an app—it's their future.
+
+**BUILD WITH EXCELLENCE. SHIP WITH CONFIDENCE. WIN TOGETHER.** 🔥🔥🔥
+
+---
+
+*Version 2.0 | Updated: November 21, 2025 | Status: PRODUCTION READY*

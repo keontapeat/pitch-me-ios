@@ -1,0 +1,505 @@
+//
+//  DeckDetailView.swift
+//  PitchMe
+//
+//  Main view for viewing and editing a pitch deck
+//
+
+import SwiftUI
+
+struct DeckDetailView: View {
+    @StateObject private var viewModel: DeckDetailViewModel
+    @Environment(\.dismiss) private var dismiss
+    
+    init(deck: Deck) {
+        _viewModel = StateObject(wrappedValue: DeckDetailViewModel(deck: deck))
+    }
+    
+    var body: some View {
+        ZStack {
+            Color.pitchBackgroundAdaptive.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Slide carousel
+                SlidePreviewCarouselView(
+                    deck: viewModel.deck,
+                    selectedIndex: $viewModel.selectedSlideIndex
+                )
+                .padding(.top, Spacing.md)
+                
+                // Current slide editor
+                if let currentSlide = viewModel.currentSlide {
+                    slideEditorView(for: currentSlide)
+                } else {
+                    emptyDeckView
+                }
+            }
+        }
+        .navigationTitle(viewModel.deck.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Menu {
+                    Button {
+                        viewModel.isShowingThemePicker = true
+                    } label: {
+                        Label("Change Theme", systemImage: "paintbrush.fill")
+                    }
+                    
+                    Button {
+                        viewModel.isShowingExportOptions = true
+                    } label: {
+                        Label("Export Deck", systemImage: "square.and.arrow.up")
+                    }
+                    
+                    Divider()
+                    
+                    Button {
+                        viewModel.addSlide()
+                    } label: {
+                        Label("Add Slide", systemImage: "plus.rectangle")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .foregroundColor(.pitchLime)
+                }
+            }
+        }
+        .sheet(isPresented: $viewModel.isShowingThemePicker) {
+            ThemePickerView(
+                selectedTheme: viewModel.deck.theme,
+                onThemeSelected: { theme in
+                    viewModel.changeTheme(to: theme)
+                }
+            )
+        }
+        .sheet(isPresented: $viewModel.isShowingExportOptions) {
+            ExportOptionsView(viewModel: viewModel)
+        }
+    }
+    
+    // MARK: - Slide Editor View
+    
+    private func slideEditorView(for slide: Slide) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                // Slide title editor
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Label("Title", systemImage: "textformat.size")
+                        .font(Typography.labelMedium)
+                        .foregroundColor(.pitchTextSecondary)
+                    
+                    TextField("Slide title", text: binding(for: slide, keyPath: \.title))
+                        .font(Typography.titleLarge)
+                        .foregroundColor(.pitchTextAdaptive)
+                        .padding(Spacing.md)
+                        .background(Color.pitchCardBackgroundAdaptive)
+                        .cornerRadius(Spacing.cardCornerRadius)
+                }
+                
+                // Bullets editor
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    HStack {
+                        Label("Content", systemImage: "list.bullet")
+                            .font(Typography.labelMedium)
+                            .foregroundColor(.pitchTextSecondary)
+                        
+                        Spacer()
+                        
+                        Button {
+                            viewModel.addBulletToSlide(at: viewModel.selectedSlideIndex)
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundColor(.pitchLime)
+                        }
+                    }
+                    
+                    ForEach(Array(slide.bullets.enumerated()), id: \.offset) { index, bullet in
+                        HStack(alignment: .top, spacing: Spacing.sm) {
+                            Circle()
+                                .fill(Color.pitchLime)
+                                .frame(width: 8, height: 8)
+                                .padding(.top, 12)
+                            
+                            TextField("Bullet point", text: bulletBinding(slideIndex: viewModel.selectedSlideIndex, bulletIndex: index))
+                                .font(Typography.bodyLarge)
+                                .foregroundColor(.pitchTextAdaptive)
+                                .padding(Spacing.md)
+                                .background(Color.pitchCardBackgroundAdaptive)
+                                .cornerRadius(Spacing.cardCornerRadius)
+                            
+                            Button {
+                                viewModel.removeBulletFromSlide(
+                                    slideIndex: viewModel.selectedSlideIndex,
+                                    bulletIndex: index
+                                )
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundColor(.pitchError)
+                            }
+                            .padding(.top, 12)
+                        }
+                    }
+                    
+                    if slide.bullets.isEmpty {
+                        Text("No content yet. Tap + to add bullet points.")
+                            .font(Typography.bodyMedium)
+                            .foregroundColor(.pitchTextTertiary)
+                            .padding(Spacing.lg)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.pitchCardBackgroundAdaptive)
+                            .cornerRadius(Spacing.cardCornerRadius)
+                    }
+                }
+                
+                // AI regenerate button
+                Button {
+                    Task {
+                        await viewModel.regenerateSlide(at: viewModel.selectedSlideIndex)
+                    }
+                } label: {
+                    HStack {
+                        if viewModel.isRegeneratingSlide {
+                            ProgressView()
+                                .tint(.pitchCharcoal)
+                        } else {
+                            Image(systemName: "sparkles")
+                        }
+                        Text(viewModel.isRegeneratingSlide ? "Improving..." : "Ask AI to improve this slide")
+                    }
+                    .font(Typography.labelLarge)
+                    .foregroundColor(.pitchCharcoal)
+                    .frame(height: Spacing.buttonHeight)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.pitchLime)
+                    .cornerRadius(Spacing.buttonCornerRadius)
+                }
+                .disabled(viewModel.isRegeneratingSlide)
+                
+                // Speaker notes
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Label("Speaker Notes", systemImage: "note.text")
+                        .font(Typography.labelMedium)
+                        .foregroundColor(.pitchTextSecondary)
+                    
+                    TextEditor(text: speakerNotesBinding(for: slide))
+                        .font(Typography.bodyMedium)
+                        .foregroundColor(.pitchTextAdaptive)
+                        .frame(minHeight: 100)
+                        .padding(Spacing.sm)
+                        .background(Color.pitchCardBackgroundAdaptive)
+                        .cornerRadius(Spacing.cardCornerRadius)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Spacing.cardCornerRadius)
+                                .stroke(Color.pitchDivider, lineWidth: BorderWidth.hairline)
+                        )
+                }
+                
+                // Slide actions
+                HStack(spacing: Spacing.base) {
+                    Button(role: .destructive) {
+                        viewModel.deleteSlide(at: viewModel.selectedSlideIndex)
+                    } label: {
+                        Label("Delete Slide", systemImage: "trash")
+                            .font(Typography.labelLarge)
+                            .foregroundColor(.white)
+                            .frame(height: Spacing.buttonHeight)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.pitchError)
+                            .cornerRadius(Spacing.buttonCornerRadius)
+                    }
+                }
+            }
+            .padding(Spacing.screenMarginHorizontal)
+            .padding(.bottom, Spacing.xxxl)
+        }
+    }
+    
+    // MARK: - Empty Deck View
+    
+    private var emptyDeckView: some View {
+        VStack(spacing: Spacing.xl) {
+            Spacer()
+            
+            Image(systemName: "rectangle.stack.badge.plus")
+                .font(.system(size: 56))
+                .foregroundColor(.pitchLime)
+            
+            Text("No slides yet")
+                .font(Typography.titleLarge)
+                .foregroundColor(.pitchTextAdaptive)
+            
+            Button {
+                viewModel.addSlide()
+            } label: {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Add First Slide")
+                }
+                .font(Typography.labelLarge)
+                .foregroundColor(.pitchCharcoal)
+                .frame(height: Spacing.buttonHeight)
+                .padding(.horizontal, Spacing.xxl)
+                .background(Color.pitchLime)
+                .cornerRadius(Spacing.buttonCornerRadius)
+            }
+            
+            Spacer()
+        }
+    }
+    
+    // MARK: - Bindings
+    
+    private func binding(for slide: Slide, keyPath: WritableKeyPath<Slide, String>) -> Binding<String> {
+        Binding(
+            get: { viewModel.deck.slides[viewModel.selectedSlideIndex][keyPath: keyPath] },
+            set: { newValue in
+                viewModel.updateSlideTitle(at: viewModel.selectedSlideIndex, newTitle: newValue)
+            }
+        )
+    }
+    
+    private func bulletBinding(slideIndex: Int, bulletIndex: Int) -> Binding<String> {
+        Binding(
+            get: { 
+                guard slideIndex < viewModel.deck.slides.count,
+                      bulletIndex < viewModel.deck.slides[slideIndex].bullets.count else {
+                    return ""
+                }
+                return viewModel.deck.slides[slideIndex].bullets[bulletIndex]
+            },
+            set: { newValue in
+                viewModel.updateSlideBullet(slideIndex: slideIndex, bulletIndex: bulletIndex, newText: newValue)
+            }
+        )
+    }
+    
+    private func speakerNotesBinding(for slide: Slide) -> Binding<String> {
+        Binding(
+            get: { slide.speakerNotes ?? "" },
+            set: { newValue in
+                viewModel.updateSpeakerNotes(
+                    at: viewModel.selectedSlideIndex,
+                    notes: newValue.isEmpty ? nil : newValue
+                )
+            }
+        )
+    }
+}
+
+// MARK: - Theme Picker View
+
+struct ThemePickerView: View {
+    let selectedTheme: Theme
+    let onThemeSelected: (Theme) -> Void
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.pitchBackgroundAdaptive.ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: Spacing.base) {
+                        ForEach(Theme.allThemes) { theme in
+                            ThemeCard(
+                                theme: theme,
+                                isSelected: theme.id == selectedTheme.id
+                            )
+                            .onTapGesture {
+                                onThemeSelected(theme)
+                                dismiss()
+                            }
+                        }
+                    }
+                    .padding(Spacing.screenMarginHorizontal)
+                }
+            }
+            .navigationTitle("Choose Theme")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ThemeCard: View {
+    let theme: Theme
+    let isSelected: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            HStack {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text(theme.displayName)
+                        .font(Typography.titleMedium)
+                        .foregroundColor(.pitchTextAdaptive)
+                    
+                    Text(theme.description)
+                        .font(Typography.bodyMedium)
+                        .foregroundColor(.pitchTextSecondary)
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.pitchLime)
+                }
+            }
+            
+            // Theme preview
+            HStack(spacing: Spacing.xs) {
+                Rectangle()
+                    .fill(theme.backgroundColor)
+                    .frame(height: 60)
+                    .overlay(
+                        VStack {
+                            Rectangle()
+                                .fill(theme.primaryColor)
+                                .frame(height: 8)
+                            Spacer()
+                        }
+                    )
+                
+                Rectangle()
+                    .fill(theme.cardBackgroundColor)
+                    .frame(height: 60)
+                    .overlay(
+                        VStack(alignment: .leading, spacing: 4) {
+                            Rectangle()
+                                .fill(theme.textColor)
+                                .frame(width: 40, height: 4)
+                            Rectangle()
+                                .fill(theme.textColor.opacity(0.5))
+                                .frame(width: 30, height: 3)
+                        }
+                        .padding(6)
+                    )
+                
+                if let gradient = theme.gradient {
+                    Rectangle()
+                        .fill(gradient)
+                        .frame(height: 60)
+                }
+            }
+            .cornerRadius(8)
+        }
+        .padding(Spacing.base)
+        .background(Color.pitchCardBackgroundAdaptive)
+        .cornerRadius(Spacing.cardCornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: Spacing.cardCornerRadius)
+                .stroke(isSelected ? Color.pitchLime : Color.clear, lineWidth: 2)
+        )
+        .cardShadow()
+    }
+}
+
+// MARK: - Export Options View
+
+struct ExportOptionsView: View {
+    @ObservedObject var viewModel: DeckDetailViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var isExporting = false
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.pitchBackgroundAdaptive.ignoresSafeArea()
+                
+                VStack(spacing: Spacing.base) {
+                    ForEach(ExportFormat.allCases, id: \.self) { format in
+                        Button {
+                            isExporting = true
+                            Task {
+                                await viewModel.exportDeck(as: format)
+                                isExporting = false
+                                dismiss()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: format.icon)
+                                    .font(.title3)
+                                    .foregroundColor(.pitchLime)
+                                    .frame(width: 32)
+                                
+                                Text(format.displayName)
+                                    .font(Typography.titleMedium)
+                                    .foregroundColor(.pitchTextAdaptive)
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.pitchTextTertiary)
+                            }
+                            .padding(Spacing.base)
+                            .background(Color.pitchCardBackgroundAdaptive)
+                            .cornerRadius(Spacing.cardCornerRadius)
+                            .cardShadow()
+                        }
+                        .disabled(isExporting)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(Spacing.screenMarginHorizontal)
+                
+                if isExporting {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: Spacing.base) {
+                        ProgressView()
+                            .tint(.pitchLime)
+                        Text("Exporting deck...")
+                            .font(Typography.titleMedium)
+                            .foregroundColor(.white)
+                    }
+                    .padding(Spacing.xxl)
+                    .background(Color.pitchCharcoal)
+                    .cornerRadius(Spacing.cardCornerRadius)
+                }
+            }
+            .navigationTitle("Export Deck")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .disabled(isExporting)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Previews
+
+#Preview("Deck Detail") {
+    NavigationStack {
+        DeckDetailView(deck: .sampleInvestorDeck)
+    }
+}
+
+#Preview("Theme Picker") {
+    ThemePickerView(
+        selectedTheme: .cleanLight,
+        onThemeSelected: { _ in }
+    )
+}
+
+#Preview("Export Options") {
+    ExportOptionsView(
+        viewModel: DeckDetailViewModel(deck: .sampleInvestorDeck)
+    )
+}
+
