@@ -17,10 +17,11 @@ struct StartupBasicsStepView: View {
         ) {
             VStack(alignment: .leading, spacing: Spacing.xl) {
                 InputField(
-                    label: "Startup Name",
-                    placeholder: "e.g., Acme Inc",
                     text: $viewModel.state.startupName,
-                    icon: "building.2.fill"
+                    placeholder: "e.g., Acme Inc",
+                    label: "Startup Name",
+                    icon: "building.2.fill",
+                    isRequired: true
                 )
                 
                 TextEditorField(

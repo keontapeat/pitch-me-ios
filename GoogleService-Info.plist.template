@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 
+	🔥 FIREBASE CONFIGURATION TEMPLATE 🔥
+	
+	INSTRUCTIONS:
+	1. Go to https://console.firebase.google.com
+	2. Select your project
+	3. Click the gear icon ⚙️ → Project Settings
+	4. Scroll to "Your apps" section
+	5. Click iOS app (or add new iOS app)
+	6. Download the REAL GoogleService-Info.plist
+	7. Replace this template file with the real one
+	8. Make sure it's named exactly: GoogleService-Info.plist (no .template)
+	
+	SECURITY:
+	- The real file is in .gitignore (won't be committed)
+	- Never share your real GoogleService-Info.plist publicly
+	- Each developer/environment should have their own
+	
+	This is just a template to show what fields exist.
+	-->
+	
+	<key>API_KEY</key>
+	<string>YOUR_API_KEY_HERE</string>
+	
+	<key>GCM_SENDER_ID</key>
+	<string>YOUR_SENDER_ID</string>
+	
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	
+	<key>BUNDLE_ID</key>
+	<string>com.pitchme.app</string>
+	
+	<key>PROJECT_ID</key>
+	<string>your-project-id</string>
+	
+	<key>STORAGE_BUCKET</key>
+	<string>your-project-id.appspot.com</string>
+	
+	<key>IS_ADS_ENABLED</key>
+	<false/>
+	
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	
+	<key>IS_APPINVITE_ENABLED</key>
+	<true/>
+	
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	
+	<key>IS_SIGNIN_ENABLED</key>
+	<true/>
+	
+	<key>GOOGLE_APP_ID</key>
+	<string>1:YOUR_APP_ID:ios:YOUR_IOS_ID</string>
+	
+	<key>DATABASE_URL</key>
+	<string>https://your-project-id.firebaseio.com</string>
+</dict>
+</plist>
+

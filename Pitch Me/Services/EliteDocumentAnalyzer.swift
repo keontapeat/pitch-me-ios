@@ -2,7 +2,8 @@
 //  EliteDocumentAnalyzer.swift
 //  Pitch Me
 //
-//  ELITE AI document analysis for accelerator-grade pitch decks
+//  🔥 ELITE AI document analysis powered by Claude Opus 4.5 🔥
+//  Creates accelerator-grade pitch decks with YC-level insights
 //
 
 import Foundation
@@ -15,6 +16,9 @@ final class EliteDocumentAnalyzer: ObservableObject {
     
     @Published var isAnalyzing = false
     @Published var analysisProgress: Double = 0.0
+    @Published var usedProvider: AIProvider = .none
+    
+    private let config = APIConfig.shared
     
     private init() {}
     
@@ -46,192 +50,201 @@ final class EliteDocumentAnalyzer: ObservableObject {
         return (baseAnalysis, enhancedScore)
     }
     
-    // MARK: - Raw Data Extraction
+    // MARK: - Raw Data Extraction (Claude Opus 4.5 or GPT-4)
     
     private func extractRawData(from text: String) async throws -> DocumentAnalysis {
-        // Simulate GPT-4 extraction
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        let systemPrompt = EliteDocumentAnalyzer.eliteExtractionPrompt
         
-        // In production, this calls GPT-4/5 with elite extraction prompt
-        return DocumentAnalysis(
-            companyName: "TechCorp AI",
-            industry: "Enterprise AI/ML",
-            problem: "Enterprise data teams waste 60% of their time on data cleaning and preparation instead of analysis",
-            solution: "Automated AI-powered data pipeline that cleans, validates, and enriches data in real-time using LLMs",
-            targetMarket: "50,000 enterprise data teams in Fortune 5000 companies",
-            competitors: ["Databricks", "Snowflake", "Fivetran"],
-            keyMetrics: [
-                "MRR": "$120K",
-                "Growth": "25% MoM",
-                "Customers": "15 enterprise",
-                "NRR": "135%",
-                "Churn": "3% annual"
-            ],
-            teamMembers: [
-                "Jane Doe - CEO (ex-OpenAI, Stanford PhD in ML)",
-                "John Smith - CTO (ex-Google Brain, built data infra at scale)",
-                "Sarah Johnson - Head of Sales (ex-Databricks, 10+ years enterprise)"
-            ],
-            fundingStage: "Seed",
-            fundingAmount: "$2M",
-            extractedData: [
-                "market_size": "$50B TAM, $5B SAM",
-                "gpu_usage": "Uses NVIDIA A100s for model training",
-                "technical_depth": "Custom transformer models, real-time inference",
-                "unique_insight": "LLMs can understand data semantics better than rule-based systems"
-            ]
-        )
+        let userPrompt = """
+        DOCUMENT TEXT:
+        
+        \(text)
+        
+        Extract all information with extreme precision. Return ONLY valid JSON.
+        """
+        
+        // 🔥 Try Claude Opus 4.5 first
+        if config.hasAnthropicKey {
+            do {
+                usedProvider = .anthropic
+                let analysis: DocumentAnalysis = try await AnthropicService.shared.generateStructuredJSON(
+                    prompt: userPrompt,
+                    systemPrompt: systemPrompt,
+                    model: .claudeOpus45
+                )
+                print("✅ Claude Opus 4.5 extraction successful!")
+                return analysis
+            } catch {
+                print("⚠️ Claude extraction failed, trying GPT-4: \(error)")
+            }
+        }
+        
+        // Fallback to GPT-4
+        if config.hasOpenAIKey {
+            usedProvider = .openAI
+            let analysis: DocumentAnalysis = try await OpenAIService.shared.generateStructuredJSON(
+                prompt: userPrompt,
+                systemPrompt: systemPrompt,
+                model: .gpt4o
+            )
+            return analysis
+        }
+        
+        throw AnthropicError.missingAPIKey
     }
     
-    // MARK: - Accelerator Scoring
+    // MARK: - Accelerator Scoring (Claude Opus 4.5)
     
     private func scoreForAccelerator(
         _ analysis: DocumentAnalysis,
         accelerator: AcceleratorTemplate
     ) async throws -> AcceleratorScore {
-        // Simulate AI scoring
-        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        let systemPrompt = EliteDocumentAnalyzer.scoringPrompt(for: accelerator)
         
-        var criteriaScores: [String: Int] = [:]
-        var overallScore = 0
-        var strengths: [String] = []
-        var weaknesses: [String] = []
+        let userPrompt = """
+        EXTRACTED DATA:
         
-        // Score based on accelerator
-        switch accelerator.id {
-        case "yc":
-            criteriaScores = [
-                "Market Size": 85,
-                "Team Quality": 95,
-                "Traction": 75,
-                "10X Better": 80,
-                "Clarity": 90,
-                "Technical Insight": 85
-            ]
-            
-            strengths = [
-                "🔥 Exceptional team with AI expertise from OpenAI and Google",
-                "📈 Strong MoM growth (25%) shows product-market fit",
-                "💰 Impressive NRR (135%) indicates strong customer value",
-                "🎯 Clear problem in massive enterprise market",
-                "⚡ Unique technical insight using LLMs for data understanding"
-            ]
-            
-            weaknesses = [
-                "⚠️ Need more specific TAM/SAM/SOM breakdown with bottom-up calc",
-                "⚠️ Show clearer path to $100M ARR (unit economics)",
-                "⚠️ Competitive moat needs more definition vs Databricks",
-                "⚠️ Need proof of 10X better (customer testimonials, benchmarks)"
-            ]
-            
-            overallScore = 83
-            
-        case "nvidia":
-            criteriaScores = [
-                "AI Technical Depth": 90,
-                "GPU Utilization": 85,
-                "Scalability": 80,
-                "Team Expertise": 95,
-                "Market Validation": 75,
-                "Technical Differentiation": 85
-            ]
-            
-            strengths = [
-                "🚀 Deep AI expertise with PhDs from Stanford and Google Brain",
-                "💻 Clear GPU utilization (A100s for training)",
-                "🧠 Advanced ML architecture with custom transformers",
-                "📊 Enterprise-ready with 15 customers",
-                "⚡ Real-time inference at scale"
-            ]
-            
-            weaknesses = [
-                "⚠️ Need more specific GPU scaling roadmap",
-                "⚠️ Show model performance benchmarks (accuracy, speed)",
-                "⚠️ Explain why GPUs are essential (vs CPU-based solutions)",
-                "⚠️ Demonstrate technical moat (model architecture details)"
-            ]
-            
-            overallScore = 85
-            
-        default:
-            overallScore = 80
+        Company: \(analysis.companyName ?? "Unknown")
+        Industry: \(analysis.industry ?? "Unknown")
+        Problem: \(analysis.problem ?? "Unknown")
+        Solution: \(analysis.solution ?? "Unknown")
+        Target Market: \(analysis.targetMarket ?? "Unknown")
+        Competitors: \(analysis.competitors?.joined(separator: ", ") ?? "Unknown")
+        Team: \(analysis.teamMembers?.joined(separator: ", ") ?? "Unknown")
+        Funding Stage: \(analysis.fundingStage ?? "Unknown")
+        Key Metrics: \(analysis.keyMetrics?.map { "\($0.key): \($0.value)" }.joined(separator: ", ") ?? "None")
+        
+        Score this startup for \(accelerator.name) acceptance.
+        Return ONLY valid JSON with: criteriaScores (dict), overallScore (int), strengths (array), weaknesses (array), likelihood (string).
+        """
+        
+        struct ScoringResponse: Codable {
+            let criteriaScores: [String: Int]
+            let overallScore: Int
+            let strengths: [String]
+            let weaknesses: [String]
+            let likelihood: String
         }
         
-        let likelihood: AcceleratorScore.AcceptanceLikelihood
-        if overallScore >= 85 {
-            likelihood = .veryHigh
-        } else if overallScore >= 75 {
-            likelihood = .high
-        } else if overallScore >= 60 {
-            likelihood = .medium
-        } else if overallScore >= 40 {
-            likelihood = .low
+        let response: ScoringResponse
+        
+        // 🔥 Use Claude Opus 4.5 for scoring
+        if config.hasAnthropicKey {
+            do {
+                response = try await AnthropicService.shared.generateStructuredJSON(
+                    prompt: userPrompt,
+                    systemPrompt: systemPrompt,
+                    model: .claudeOpus45
+                )
+            } catch {
+                // Fallback to GPT-4
+                guard config.hasOpenAIKey else { throw error }
+                response = try await OpenAIService.shared.generateStructuredJSON(
+                    prompt: userPrompt,
+                    systemPrompt: systemPrompt,
+                    model: .gpt4o
+                )
+            }
+        } else if config.hasOpenAIKey {
+            response = try await OpenAIService.shared.generateStructuredJSON(
+                prompt: userPrompt,
+                systemPrompt: systemPrompt,
+                model: .gpt4o
+            )
         } else {
-            likelihood = .veryLow
+            throw AnthropicError.missingAPIKey
         }
+        
+        let likelihood = parseLikelihood(response.likelihood)
         
         return AcceleratorScore(
             acceleratorId: accelerator.id,
-            overallScore: overallScore,
-            criteriaScores: criteriaScores,
-            strengths: strengths,
-            weaknesses: weaknesses,
+            overallScore: response.overallScore,
+            criteriaScores: response.criteriaScores,
+            strengths: response.strengths,
+            weaknesses: response.weaknesses,
             recommendations: [],  // Generated in next step
             likelihood: likelihood
         )
     }
     
-    // MARK: - Generate Recommendations
+    // MARK: - Helper
+    
+    private func parseLikelihood(_ string: String) -> AcceleratorScore.AcceptanceLikelihood {
+        switch string.lowercased() {
+        case "very high", "veryhigh":
+            return .veryHigh
+        case "high":
+            return .high
+        case "medium", "moderate":
+            return .medium
+        case "low":
+            return .low
+        default:
+            return .veryLow
+        }
+    }
+    
+    // MARK: - Generate Recommendations (Claude Opus 4.5)
     
     private func generateAcceleratorRecommendations(
         _ score: AcceleratorScore,
         for accelerator: AcceleratorTemplate
     ) async throws -> AcceleratorScore {
-        // Simulate GPT-4 recommendations
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        let systemPrompt = EliteDocumentAnalyzer.recommendationsPrompt(
+            for: accelerator,
+            score: score.overallScore
+        )
         
-        var recommendations: [String] = []
+        let userPrompt = """
+        Current analysis:
+        - Overall Score: \(score.overallScore)/100
+        - Strengths: \(score.strengths.joined(separator: ", "))
+        - Weaknesses: \(score.weaknesses.joined(separator: ", "))
         
-        // Generate specific, actionable recommendations
-        switch accelerator.id {
-        case "yc":
-            recommendations = [
-                "📊 Add bottom-up market sizing: Calculate # of data teams × ACV to show path to $100M",
-                "🎯 Include 2-3 customer quotes showing 10X improvement (time saved, accuracy gained)",
-                "💪 Show competitive moat: Explain why your LLM approach is defensible vs incumbents",
-                "📈 Add financial projection: Show path from $120K MRR to $10M ARR in 24 months",
-                "🔥 Lead with your strongest metric: 25% MoM growth + 135% NRR = world-class retention",
-                "👥 Emphasize founder-market fit: Why Jane from OpenAI is uniquely positioned to win"
-            ]
-            
-        case "nvidia":
-            recommendations = [
-                "🖥️ Create GPU utilization slide: Show current A100 usage → future H100 scaling plan",
-                "⚡ Add performance benchmarks: Compare your solution vs CPU-based alternatives (speed, accuracy)",
-                "🏗️ Diagram your AI architecture: Show how you use GPUs for training + inference at scale",
-                "📊 Quantify GPU economics: Show cost per inference, how it improves with scale",
-                "🎯 Highlight NVIDIA ecosystem: Mention CUDA, TensorRT, any NVIDIA partnerships",
-                "🚀 Show scaling roadmap: Map customers → GPU needs (10 customers = X GPUs, 100 = Y)"
-            ]
-            
-        default:
-            recommendations = [
-                "Strengthen your value proposition",
-                "Add more traction metrics",
-                "Improve team slide",
-                "Show clearer market opportunity"
-            ]
+        Generate 6-10 specific, actionable recommendations to improve their \(accelerator.name) application.
+        Return ONLY valid JSON: {"recommendations": ["string", "string", ...]}
+        """
+        
+        struct RecommendationsResponse: Codable {
+            let recommendations: [String]
         }
         
-        return AcceleratorScore(
-            acceleratorId: score.acceleratorId,
-            overallScore: score.overallScore,
-            criteriaScores: score.criteriaScores,
-            strengths: score.strengths,
-            weaknesses: score.weaknesses,
-            recommendations: recommendations,
-            likelihood: score.likelihood
-        )
+        do {
+            let response: RecommendationsResponse
+            
+            // 🔥 Use Claude Opus 4.5 for recommendations
+            if config.hasAnthropicKey {
+                response = try await AnthropicService.shared.generateStructuredJSON(
+                    prompt: userPrompt,
+                    systemPrompt: systemPrompt,
+                    model: .claudeOpus45
+                )
+            } else if config.hasOpenAIKey {
+                response = try await OpenAIService.shared.generateStructuredJSON(
+                    prompt: userPrompt,
+                    systemPrompt: systemPrompt,
+                    model: .gpt4o
+                )
+            } else {
+                return score  // Return without recommendations
+            }
+            
+            return AcceleratorScore(
+                acceleratorId: score.acceleratorId,
+                overallScore: score.overallScore,
+                criteriaScores: score.criteriaScores,
+                strengths: score.strengths,
+                weaknesses: score.weaknesses,
+                recommendations: response.recommendations,
+                likelihood: score.likelihood
+            )
+            
+        } catch {
+            print("⚠️ Recommendations generation failed: \(error)")
+            // Return score without enhanced recommendations
+            return score
+        }
     }
 }
 

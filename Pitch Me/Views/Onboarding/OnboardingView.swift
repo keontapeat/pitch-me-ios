@@ -2,7 +2,7 @@
 //  OnboardingView.swift
 //  Pitch Me
 //
-//  Premium onboarding experience
+//  Premium onboarding experience - Apple & ChatGPT quality
 //
 
 import SwiftUI
@@ -11,46 +11,44 @@ struct OnboardingView: View {
     @StateObject private var appState = AppState.shared
     @State private var currentPage = 0
     @State private var isAnimating = false
+    let onGetStarted: (() -> Void)?
+    
+    init(onGetStarted: (() -> Void)? = nil) {
+        self.onGetStarted = onGetStarted
+    }
     
     let pages: [OnboardingPage] = [
         OnboardingPage(
             icon: "sparkles",
             title: "AI-Powered Pitch Decks",
             description: "Transform your startup idea into a professional, investor-ready pitch deck in minutes",
-            accentColor: .pitchLime
+            accentColor: Color(red: 0.5, green: 0.5, blue: 0.55)
         ),
         OnboardingPage(
             icon: "wand.and.stars",
             title: "Smart Generation",
             description: "Answer a few questions and watch as AI crafts a compelling story tailored to your audience",
-            accentColor: Color(red: 0.4, green: 0.2, blue: 0.9)
+            accentColor: Color(red: 0.45, green: 0.5, blue: 0.6)
         ),
         OnboardingPage(
             icon: "paintbrush.fill",
             title: "Beautiful Themes",
             description: "Choose from stunning themes that make your deck stand out. From clean & minimal to bold & impactful",
-            accentColor: Color(red: 0.9, green: 0.3, blue: 0.5)
+            accentColor: Color(red: 0.55, green: 0.5, blue: 0.5)
         ),
         OnboardingPage(
             icon: "square.and.arrow.up.fill",
             title: "Export Anywhere",
             description: "Export to Google Slides, PowerPoint, or PDF. Your pitch, your way",
-            accentColor: .pitchLime
+            accentColor: Color(red: 0.5, green: 0.55, blue: 0.5)
         )
     ]
     
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [
-                    Color.pitchCharcoal,
-                    Color.pitchCharcoalWarm
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            // Clean dark background
+            Color(red: 0.08, green: 0.08, blue: 0.09)
+                .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 // Skip button
@@ -62,8 +60,8 @@ struct OnboardingView: View {
                         }
                     } label: {
                         Text("Skip")
-                            .font(Typography.labelLarge)
-                            .foregroundColor(.white.opacity(0.7))
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.white.opacity(0.5))
                             .padding(.horizontal, Spacing.lg)
                             .padding(.vertical, Spacing.sm)
                     }
@@ -82,18 +80,18 @@ struct OnboardingView: View {
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .animation(.easeInOut, value: currentPage)
                 
-                // Page indicators
+                // Page indicators - subtle dots
                 HStack(spacing: Spacing.sm) {
                     ForEach(pages.indices, id: \.self) { index in
                         Circle()
-                            .fill(index == currentPage ? Color.pitchLime : Color.white.opacity(0.3))
-                            .frame(width: index == currentPage ? 10 : 8, height: index == currentPage ? 10 : 8)
+                            .fill(index == currentPage ? Color.white : Color.white.opacity(0.2))
+                            .frame(width: index == currentPage ? 8 : 6, height: index == currentPage ? 8 : 6)
                             .animation(.spring(response: 0.3), value: currentPage)
                     }
                 }
                 .padding(.bottom, Spacing.base)
                 
-                // Action button
+                // Action button - professional style
                 Button {
                     if currentPage < pages.count - 1 {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -103,29 +101,31 @@ struct OnboardingView: View {
                         withAnimation {
                             appState.completeOnboarding()
                         }
+                        onGetStarted?()
                     }
                 } label: {
-                    HStack(spacing: Spacing.sm) {
-                        Text(currentPage < pages.count - 1 ? "Next" : "Get Started")
-                            .font(Typography.labelLarge)
-                            .fontWeight(.bold)
-                        
-                        if currentPage < pages.count - 1 {
+                    HStack(spacing: 10) {
+                        if currentPage >= pages.count - 1 {
                             Image(systemName: "arrow.right")
-                                .font(.system(size: 16, weight: .bold))
-                        } else {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: 14, weight: .semibold))
                         }
+                        
+                        Text(currentPage < pages.count - 1 ? "Continue" : "Start Pitching")
+                            .font(.system(size: 16, weight: .semibold))
                     }
-                    .foregroundColor(.pitchCharcoal)
+                    .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: Spacing.buttonHeight)
-                    .background(Color.pitchLime)
-                    .cornerRadius(Spacing.buttonCornerRadius)
-                    .shadow(color: Color.pitchLime.opacity(0.3), radius: 20, x: 0, y: 10)
+                    .frame(height: 54)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color(red: 0.15, green: 0.15, blue: 0.17))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
                 }
-                .padding(.horizontal, Spacing.screenMarginHorizontal)
+                .padding(.horizontal, 24)
                 .padding(.bottom, Spacing.xxxl)
             }
         }
@@ -148,64 +148,54 @@ struct OnboardingPageView: View {
     @State private var isAnimating = false
     
     var body: some View {
-        VStack(spacing: Spacing.xxxl) {
+        VStack(spacing: 0) {
             Spacer()
             
-            // Icon with glow effect
+            // Icon - clean and minimal
             ZStack {
-                // Glow
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                page.accentColor.opacity(0.3),
-                                Color.clear
-                            ],
-                            center: .center,
-                            startRadius: 50,
-                            endRadius: 120
-                        )
+                // Subtle background
+                RoundedRectangle(cornerRadius: 32)
+                    .fill(Color.white.opacity(0.06))
+                    .frame(width: 120, height: 120)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 32)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
                     )
-                    .frame(width: 240, height: 240)
-                    .blur(radius: 20)
-                    .opacity(isAnimating ? 1.0 : 0.0)
-                
-                // Icon background
-                Circle()
-                    .fill(page.accentColor.opacity(0.2))
-                    .frame(width: 140, height: 140)
                 
                 // Icon
                 Image(systemName: page.icon)
-                    .font(.system(size: 64, weight: .medium))
-                    .foregroundColor(page.accentColor)
+                    .font(.system(size: 48, weight: .light))
+                    .foregroundColor(.white.opacity(0.9))
             }
-            .scaleEffect(isAnimating ? 1.0 : 0.8)
+            .scaleEffect(isAnimating ? 1.0 : 0.9)
             .opacity(isAnimating ? 1.0 : 0.0)
+            .padding(.bottom, 48)
             
             // Content
-            VStack(spacing: Spacing.lg) {
+            VStack(spacing: 16) {
                 Text(page.title)
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .semibold))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
                     .minimumScaleFactor(0.8)
                 
                 Text(page.description)
-                    .font(Typography.bodyLarge)
-                    .foregroundColor(.white.opacity(0.8))
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundColor(.white.opacity(0.6))
                     .multilineTextAlignment(.center)
-                    .lineSpacing(6)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 8)
             }
-            .padding(.horizontal, Spacing.xxxl)
-            .offset(y: isAnimating ? 0 : 30)
+            .padding(.horizontal, 32)
+            .offset(y: isAnimating ? 0 : 20)
             .opacity(isAnimating ? 1.0 : 0.0)
             
             Spacer()
+            Spacer()
         }
         .onAppear {
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.1)) {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
                 isAnimating = true
             }
         }

@@ -109,13 +109,27 @@ struct DocumentUploadStepView: View {
         } label: {
             VStack(spacing: Spacing.base) {
                 if uploadService.isUploading {
+                    // 🔥 Better progress indication
                     ProgressView(value: uploadService.uploadProgress)
                         .tint(.pitchLime)
-                        .frame(width: 100)
+                        .frame(width: 150)
                     
-                    Text("Uploading... \(Int(uploadService.uploadProgress * 100))%")
+                    Text(progressLabel)
                         .font(Typography.labelMedium)
                         .foregroundColor(.pitchTextSecondary)
+                        .animation(.easeInOut, value: uploadService.uploadProgress)
+                    
+                    // Show which AI is being used
+                    if uploadService.uploadProgress > 0.5 {
+                        HStack(spacing: 4) {
+                            Image(systemName: uploadService.usedAIProvider.icon)
+                                .foregroundColor(.pitchLime)
+                            Text(uploadService.usedAIProvider.displayName)
+                                .font(Typography.labelSmall)
+                                .foregroundColor(.pitchTextTertiary)
+                        }
+                        .transition(.opacity)
+                    }
                 } else {
                     Image(systemName: "doc.badge.plus")
                         .font(.system(size: 48))
@@ -154,6 +168,21 @@ struct DocumentUploadStepView: View {
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(uploadService.isUploading)
+    }
+    
+    // MARK: - Progress Label
+    
+    private var progressLabel: String {
+        let progress = uploadService.uploadProgress
+        if progress < 0.5 {
+            return "Uploading... \(Int(progress * 100))%"
+        } else if progress < 0.6 {
+            return "Extracting text... 🔍"
+        } else if progress < 0.95 {
+            return "AI analyzing... \(Int(progress * 100))% 🤖"
+        } else {
+            return "Finishing up... ✨"
+        }
     }
     
     // MARK: - Uploaded Documents List

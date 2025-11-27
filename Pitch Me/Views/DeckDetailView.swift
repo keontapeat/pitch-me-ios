@@ -76,6 +76,20 @@ struct DeckDetailView: View {
         .sheet(isPresented: $viewModel.isShowingExportOptions) {
             ExportOptionsView(viewModel: viewModel)
         }
+        .sheet(isPresented: $viewModel.showShareSheet) {
+            if let fileURL = viewModel.exportedFileURL {
+                ShareSheet(items: [fileURL])
+            }
+        }
+        .alert("Export Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+            Button("OK") {
+                viewModel.errorMessage = nil
+            }
+        } message: {
+            if let error = viewModel.errorMessage {
+                Text(error)
+            }
+        }
     }
     
     // MARK: - Slide Editor View
@@ -406,80 +420,207 @@ struct ThemeCard: View {
 
 struct ExportOptionsView: View {
     @ObservedObject var viewModel: DeckDetailViewModel
+    @ObservedObject private var subscriptionService = SubscriptionService.shared
     @Environment(\.dismiss) private var dismiss
-    @State private var isExporting = false
+    @State private var showUpgradeAlert = false
+    @State private var selectedFormat: ExportFormat?
     
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.pitchBackgroundAdaptive.ignoresSafeArea()
                 
-                VStack(spacing: Spacing.base) {
-                    ForEach(ExportFormat.allCases, id: \.self) { format in
-                        Button {
-                            isExporting = true
-                            Task {
-                                await viewModel.exportDeck(as: format)
-                                isExporting = false
-                                dismiss()
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: format.icon)
-                                    .font(.title3)
-                                    .foregroundColor(.pitchLime)
-                                    .frame(width: 32)
-                                
-                                Text(format.displayName)
-                                    .font(Typography.titleMedium)
-                                    .foregroundColor(.pitchTextAdaptive)
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(.pitchTextTertiary)
-                            }
-                            .padding(Spacing.base)
-                            .background(Color.pitchCardBackgroundAdaptive)
-                            .cornerRadius(Spacing.cardCornerRadius)
-                            .cardShadow()
+                ScrollView {
+                    VStack(spacing: Spacing.lg) {
+                        // Header
+                        VStack(spacing: Spacing.sm) {
+                            Image(systemName: "square.and.arrow.up.circle.fill")
+                                .font(.system(size: 48))
+                                .foregroundColor(.pitchLime)
+                            
+                            Text("Export Your Deck")
+                                .font(Typography.titleLarge)
+                                .foregroundColor(.pitchTextAdaptive)
+                            
+                            Text("Choose your preferred format")
+                                .font(Typography.bodyMedium)
+                                .foregroundColor(.pitchTextSecondary)
                         }
-                        .disabled(isExporting)
+                        .padding(.top, Spacing.lg)
+                        
+                        // Export format cards
+                        VStack(spacing: Spacing.md) {
+                            ForEach(ExportFormat.allCases) { format in
+                                ExportFormatCard(
+                                    format: format,
+                                    currentTier: subscriptionService.currentTier
+                                ) {
+                                    handleExport(format)
+                                }
+                            }
+                        }
+                        
+                        Spacer()
                     }
-                    
-                    Spacer()
+                    .padding(Spacing.screenMarginHorizontal)
                 }
-                .padding(Spacing.screenMarginHorizontal)
                 
-                if isExporting {
-                    Color.black.opacity(0.4)
+                // Export progress overlay
+                if viewModel.isExporting {
+                    Color.black.opacity(0.6)
                         .ignoresSafeArea()
                     
-                    VStack(spacing: Spacing.base) {
-                        ProgressView()
-                            .tint(.pitchLime)
-                        Text("Exporting deck...")
-                            .font(Typography.titleMedium)
-                            .foregroundColor(.white)
+                    VStack(spacing: Spacing.lg) {
+                        // Progress circle
+                        ZStack {
+                            Circle()
+                                .stroke(Color.white.opacity(0.2), lineWidth: 8)
+                                .frame(width: 100, height: 100)
+                            
+                            Circle()
+                                .trim(from: 0, to: viewModel.exportProgress)
+                                .stroke(Color.pitchLime, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                                .frame(width: 100, height: 100)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeInOut, value: viewModel.exportProgress)
+                            
+                            Text("\(Int(viewModel.exportProgress * 100))%")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        
+                        VStack(spacing: Spacing.sm) {
+                            Text(viewModel.exportStep)
+                                .font(Typography.titleMedium)
+                                .foregroundColor(.white)
+                            
+                            if let format = selectedFormat {
+                                Text("Exporting as \(format.displayName)")
+                                    .font(Typography.bodyMedium)
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
+                        }
                     }
-                    .padding(Spacing.xxl)
-                    .background(Color.pitchCharcoal)
-                    .cornerRadius(Spacing.cardCornerRadius)
+                    .padding(Spacing.xxxl)
+                    .background(
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(Color.pitchCharcoal)
+                            .shadow(color: .black.opacity(0.3), radius: 30, x: 0, y: 10)
+                    )
+                    .padding(Spacing.xl)
                 }
             }
-            .navigationTitle("Export Deck")
+            .navigationTitle("Export")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
-                    .disabled(isExporting)
+                    .disabled(viewModel.isExporting)
                 }
             }
         }
     }
+    
+    private func handleExport(_ format: ExportFormat) {
+        // Check if user has permission
+        let canExport: Bool
+        switch format {
+        case .pdf:
+            canExport = subscriptionService.canAccessFeature(.exportPDF)
+        case .powerpoint:
+            canExport = subscriptionService.canAccessFeature(.exportPowerPoint)
+        case .googleSlides:
+            canExport = subscriptionService.canAccessFeature(.exportGoogleSlides)
+        }
+        
+        if canExport {
+            selectedFormat = format
+            Task {
+                await viewModel.exportDeck(as: format)
+            }
+        } else {
+            // Show upgrade requirement
+            showUpgradeAlert = true
+        }
+    }
+}
+
+// MARK: - Export Format Card
+
+struct ExportFormatCard: View {
+    let format: ExportFormat
+    let currentTier: SubscriptionTier
+    let onTap: () -> Void
+    
+    private var isLocked: Bool {
+        currentTier.rawValue < format.requiredTier.rawValue
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: Spacing.base) {
+                // Icon
+                ZStack {
+                    Circle()
+                        .fill(isLocked ? Color.gray.opacity(0.2) : Color.pitchLime.opacity(0.15))
+                        .frame(width: 56, height: 56)
+                    
+                    Image(systemName: format.icon)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(isLocked ? .gray : .pitchLime)
+                }
+                
+                // Content
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(format.displayName)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(isLocked ? .pitchTextTertiary : .pitchTextAdaptive)
+                        
+                        if isLocked {
+                            Image(systemName: "lock.fill")
+                                .font(.caption)
+                                .foregroundColor(.pitchTextTertiary)
+                        }
+                    }
+                    
+                    Text(format.tierRequirementMessage)
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(.pitchTextSecondary)
+                        .lineLimit(2)
+                }
+                
+                Spacer()
+                
+                Image(systemName: isLocked ? "arrow.up.right.square.fill" : "chevron.right")
+                    .font(.title3)
+                    .foregroundColor(isLocked ? .pitchLime : .pitchTextTertiary)
+            }
+            .padding(Spacing.base)
+            .background(Color.pitchCardBackgroundAdaptive)
+            .cornerRadius(Spacing.cardCornerRadius)
+            .overlay(
+                RoundedRectangle(cornerRadius: Spacing.cardCornerRadius)
+                    .stroke(isLocked ? Color.clear : Color.pitchLime.opacity(0.2), lineWidth: 1)
+            )
+            .cardShadow()
+        }
+    }
+}
+
+// MARK: - Share Sheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Previews

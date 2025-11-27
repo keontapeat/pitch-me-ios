@@ -13,13 +13,26 @@ import Combine
 final class DeckDetailViewModel: ObservableObject {
     // MARK: - Published Properties
     
-    @Published var deck: Deck
+    @Published var deck: Deck {
+        didSet {
+            // Auto-save when deck changes
+            scheduleAutoSave()
+        }
+    }
     @Published var selectedSlideIndex: Int = 0
     @Published var isEditingTitle: Bool = false
     @Published var isShowingThemePicker: Bool = false
     @Published var isShowingExportOptions: Bool = false
     @Published var isRegeneratingSlide: Bool = false
     @Published var errorMessage: String?
+    @Published var exportedFileURL: URL?
+    @Published var showShareSheet: Bool = false
+    
+    // Services
+    private let exportService = DeckExportService.shared
+    
+    // Auto-save debounce
+    private var autoSaveTask: Task<Void, Never>?
     
     // MARK: - Computed Properties
     
@@ -145,6 +158,26 @@ final class DeckDetailViewModel: ObservableObject {
         isShowingThemePicker = false
     }
     
+    // MARK: - Auto-Save
+    
+    private func scheduleAutoSave() {
+        autoSaveTask?.cancel()
+        autoSaveTask = Task {
+            // Debounce - wait 1 second before saving
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            
+            if !Task.isCancelled {
+                saveDeck()
+            }
+        }
+    }
+    
+    /// Save deck to persistent storage
+    func saveDeck() {
+        DeckListViewModel.shared.updateDeck(deck)
+        print("💾 Auto-saved deck: \(deck.title)")
+    }
+    
     // MARK: - AI Methods
     
     func regenerateSlide(at index: Int) async {
@@ -165,42 +198,44 @@ final class DeckDetailViewModel: ObservableObject {
         deck.touch()
         
         isRegeneratingSlide = false
+        
+        // Save after regeneration
+        saveDeck()
     }
     
     // MARK: - Export Methods
     
     func exportDeck(as format: ExportFormat) async {
         errorMessage = nil
+        exportedFileURL = nil
         
-        // Simulate export process
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
-        
-        // This will be connected to real export service
-        isShowingExportOptions = false
-    }
-}
-
-// MARK: - ExportFormat
-
-enum ExportFormat: String, CaseIterable {
-    case googleSlides = "google_slides"
-    case powerpoint = "pptx"
-    case pdf = "pdf"
-    
-    var displayName: String {
-        switch self {
-        case .googleSlides: return "Google Slides"
-        case .powerpoint: return "PowerPoint"
-        case .pdf: return "PDF"
+        do {
+            // Call the production export service
+            let fileURL = try await exportService.exportDeck(deck, format: format)
+            
+            // Show share sheet
+            exportedFileURL = fileURL
+            showShareSheet = true
+            isShowingExportOptions = false
+            
+        } catch let error as ExportError {
+            errorMessage = error.errorDescription ?? "Export failed"
+        } catch {
+            errorMessage = "Failed to export deck. Please try again."
         }
     }
     
-    var icon: String {
-        switch self {
-        case .googleSlides: return "square.grid.3x3.fill"
-        case .powerpoint: return "doc.fill"
-        case .pdf: return "doc.richtext.fill"
-        }
+    /// Get export progress from service
+    var exportProgress: Double {
+        exportService.exportProgress
+    }
+    
+    var isExporting: Bool {
+        exportService.isExporting
+    }
+    
+    var exportStep: String {
+        exportService.currentStep
     }
 }
 

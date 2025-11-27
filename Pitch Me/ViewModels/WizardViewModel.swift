@@ -122,11 +122,22 @@ final class WizardViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            // Simulate AI generation with progress updates
-            await simulateGeneration()
+            // 🔥 Use REAL AI generation with Claude Opus 4.5 or GPT-4 🔥
+            let deckService = DeckGenerationService.shared
             
-            // Create deck (will be replaced with real API call)
-            let deck = createDeckFromState()
+            // Pro Plus gets Claude Opus 4.5, others get GPT-4
+            let useClaude = shouldUseClaudeOpus()
+            
+            // Start progress observation
+            Task { @MainActor in
+                for await _ in Timer.publish(every: 0.1, on: .main, in: .common).autoconnect().values {
+                    generationProgress = deckService.generationProgress
+                    if !deckService.isGenerating { break }
+                }
+            }
+            
+            // Generate deck with best available AI
+            let deck = try await deckService.generateDeck(from: state, preferClaude: useClaude)
             
             generatedDeck = deck
             
@@ -146,20 +157,28 @@ final class WizardViewModel: ObservableObject {
         isGenerating = false
     }
     
-    private func simulateGeneration() async {
-        let steps = [
-            "Analyzing your startup...",
-            "Crafting your story...",
-            "Generating slides...",
-            "Applying theme...",
-            "Finalizing deck..."
-        ]
+    // MARK: - Model Selection
+    
+    private func shouldUseClaudeOpus() -> Bool {
+        // Pro Plus and Enterprise get Claude Opus 4.5
+        let tier = SubscriptionService.shared.currentTier
+        return tier == .proPlus || tier == .enterprise
+    }
+    
+    private func determineModelForUser() -> GPTModel {
+        let tier = SubscriptionService.shared.currentTier
         
-        for (index, _) in steps.enumerated() {
-            generationProgress = Double(index + 1) / Double(steps.count)
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s per step
+        switch tier {
+        case .free:
+            return .gpt35Turbo  // Basic AI for free tier
+        case .pro:
+            return .gpt4o      // GPT-4o for Pro
+        case .proPlus, .enterprise:
+            return .gpt4o      // Fallback if Claude fails
         }
     }
+    
+    // MARK: - Fallback Deck Creation (if AI fails)
     
     private func createDeckFromState() -> Deck {
         let deckId = UUID().uuidString

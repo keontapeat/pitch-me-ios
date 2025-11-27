@@ -111,16 +111,25 @@ struct WizardContainerView: View {
             Text("Your progress will be lost if you exit now.")
         }
         .fullScreenCover(item: $viewModel.generatedDeck) { deck in
-            DeckDetailView(deck: deck)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Done") {
-                            // Increment deck count
-                            SubscriptionService.shared.incrementDeckCount()
-                            dismiss()
+            NavigationStack {
+                DeckDetailView(deck: deck)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Save & Exit") {
+                                // 🔥 Save deck to list
+                                DeckListViewModel.shared.addDeck(deck)
+                                
+                                // Increment deck count for subscription tracking
+                                SubscriptionService.shared.incrementDeckCount()
+                                
+                                // Dismiss wizard
+                                dismiss()
+                            }
+                            .fontWeight(.semibold)
+                            .foregroundColor(.pitchLime)
                         }
                     }
-                }
+            }
         }
         .onAppear {
             // Load subscription status

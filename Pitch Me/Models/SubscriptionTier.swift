@@ -63,9 +63,9 @@ enum SubscriptionTier: String, Codable {
     
     var canUploadDocuments: Bool {
         switch self {
-        case .free: return false  // NO DOCUMENT UPLOAD - must copy/paste everything
-        case .pro: return false
-        case .proPlus: return true  // Only Pro Plus gets this
+        case .free: return false  // Free users must use manual input
+        case .pro: return true    // 🔥 Pro gets document upload!
+        case .proPlus: return true
         case .enterprise: return true
         }
     }
@@ -160,15 +160,16 @@ enum SubscriptionTier: String, Codable {
                 "1 deck total (trial)",
                 "Up to 8 slides per deck",
                 "PDF export with watermark",
-                "1 theme only",
-                "Basic AI",
-                "Manual input only (no uploads)"
+                "1 theme",
+                "Basic AI generation",
+                "Manual input only"
             ]
         case .pro:
             return [
                 "✨ Unlimited decks",
+                "📄 Document upload & analysis",
                 "Up to 20 slides per deck",
-                "Better AI (Gemini Pro)",
+                "🤖 GPT-4o AI generation",
                 "Export to PDF + PowerPoint",
                 "10 premium themes",
                 "No watermarks",
@@ -177,14 +178,13 @@ enum SubscriptionTier: String, Codable {
         case .proPlus:
             return [
                 "Everything in Pro",
-                "🔥 Elite AI (GPT-4/5 + Gemini 2.0)",
-                "📄 Document upload & analysis",
+                "🔥 Claude Opus 4.5 (ELITE AI)",
                 "Up to 30 slides per deck",
                 "Export to Google Slides",
                 "All 20+ premium themes",
-                "🎯 AI story feedback",
+                "🎯 AI story feedback & scoring",
                 "🚀 Accelerator templates (YC, NVIDIA)",
-                "Priority support (24h)"
+                "Priority support (24h response)"
             ]
         case .enterprise:
             return [

@@ -10,47 +10,73 @@ import SwiftUI
 // MARK: - Text Input Field
 
 struct InputField: View {
-    let label: String
-    let placeholder: String
     @Binding var text: String
-    var isRequired: Bool = true
+    let placeholder: String
+    var label: String? = nil
+    var icon: String? = nil
+    var isRequired: Bool = false
+    var isSecure: Bool = false
+    var keyboardType: UIKeyboardType = .default
+    var textContentType: UITextContentType? = nil
+    var autocapitalization: TextInputAutocapitalization = .sentences
     var minLines: Int = 1
     var maxLines: Int = 5
-    var icon: String? = nil
     
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            // Label with icon
-            HStack(spacing: Spacing.xs) {
-                if let icon = icon {
-                    Image(systemName: icon)
-                        .font(.caption)
-                        .foregroundColor(.pitchLime)
-                }
-                
-                Text(label)
-                    .font(Typography.labelMedium)
-                    .foregroundColor(.pitchTextSecondary)
-                
-                if isRequired {
-                    Text("*")
+            // Optional label with icon
+            if let label = label {
+                HStack(spacing: Spacing.xs) {
+                    if let icon = icon {
+                        Image(systemName: icon)
+                            .font(.caption)
+                            .foregroundColor(.pitchLime)
+                    }
+                    
+                    Text(label)
                         .font(Typography.labelMedium)
-                        .foregroundColor(.pitchError)
+                        .foregroundColor(.pitchTextSecondary)
+                    
+                    if isRequired {
+                        Text("*")
+                            .font(Typography.labelMedium)
+                            .foregroundColor(.pitchError)
+                    }
                 }
             }
             
-            // Text field
-            TextField(placeholder, text: $text, axis: .vertical)
-                .font(Typography.bodyLarge)
-                .foregroundColor(.pitchTextAdaptive)
-                .padding(Spacing.md)
-                .background(Color.pitchCardBackgroundAdaptive)
-                .cornerRadius(Spacing.cardCornerRadius)
-                .lineLimit(minLines...maxLines)
-                .overlay(
-                    RoundedRectangle(cornerRadius: Spacing.cardCornerRadius)
-                        .stroke(text.isEmpty && isRequired ? Color.pitchError.opacity(0.3) : Color.clear, lineWidth: 1)
-                )
+            // Text field or secure field
+            HStack(spacing: Spacing.sm) {
+                if let icon = icon, label == nil {
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.pitchTextAdaptive.opacity(0.4))
+                        .frame(width: 20)
+                }
+                
+                if isSecure {
+                    SecureField(placeholder, text: $text)
+                        .font(Typography.bodyLarge)
+                        .foregroundColor(.pitchTextAdaptive)
+                        .textContentType(textContentType)
+                        .textInputAutocapitalization(autocapitalization)
+                } else {
+                    TextField(placeholder, text: $text, axis: .vertical)
+                        .font(Typography.bodyLarge)
+                        .foregroundColor(.pitchTextAdaptive)
+                        .keyboardType(keyboardType)
+                        .textContentType(textContentType)
+                        .textInputAutocapitalization(autocapitalization)
+                        .lineLimit(minLines...maxLines)
+                }
+            }
+            .padding(Spacing.md)
+            .background(Color.pitchCardBackgroundAdaptive)
+            .cornerRadius(Spacing.cardCornerRadius)
+            .overlay(
+                RoundedRectangle(cornerRadius: Spacing.cardCornerRadius)
+                    .stroke(text.isEmpty && isRequired ? Color.pitchError.opacity(0.3) : Color.pitchTextAdaptive.opacity(0.1), lineWidth: 1)
+            )
         }
     }
 }
@@ -132,27 +158,31 @@ struct PrimaryButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: Spacing.sm) {
+            HStack(spacing: 10) {
                 if isLoading {
                     ProgressView()
                         .tint(.pitchCharcoal)
-                } else if let icon = icon {
-                    Image(systemName: icon)
-                        .font(.system(size: 16, weight: .bold))
+                } else {
+                    Text(title)
+                        .font(.system(size: 17, weight: .semibold))
+                    
+                    if let icon = icon {
+                        Image(systemName: icon)
+                            .font(.system(size: 16, weight: .semibold))
+                    }
                 }
-                
-                Text(title)
-                    .font(Typography.labelLarge)
-                    .fontWeight(.bold)
             }
             .foregroundColor(.pitchCharcoal)
             .frame(maxWidth: .infinity)
-            .frame(height: Spacing.buttonHeight)
-            .background(isDisabled ? Color.gray : Color.pitchLime)
-            .cornerRadius(Spacing.buttonCornerRadius)
-            .shadow(color: isDisabled ? Color.clear : Color.pitchLime.opacity(0.3), radius: 12, x: 0, y: 4)
+            .frame(height: 56)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isDisabled ? Color.gray.opacity(0.3) : Color.pitchLime)
+                    .shadow(color: isDisabled ? .clear : Color.pitchLime.opacity(0.4), radius: 16, x: 0, y: 4)
+            )
         }
         .disabled(isDisabled || isLoading)
+        .opacity(isDisabled ? 0.6 : 1.0)
     }
 }
 
@@ -171,23 +201,25 @@ struct SecondaryButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: Spacing.sm) {
+            HStack(spacing: 10) {
                 if let icon = icon {
                     Image(systemName: icon)
                         .font(.system(size: 16, weight: .medium))
                 }
                 
                 Text(title)
-                    .font(Typography.labelLarge)
+                    .font(.system(size: 17, weight: .medium))
             }
-            .foregroundColor(.pitchTextAdaptive)
+            .foregroundColor(.white.opacity(0.85))
             .frame(maxWidth: .infinity)
-            .frame(height: Spacing.buttonHeight)
-            .background(Color.pitchCardBackgroundAdaptive)
-            .cornerRadius(Spacing.buttonCornerRadius)
+            .frame(height: 56)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.08))
+            )
             .overlay(
-                RoundedRectangle(cornerRadius: Spacing.buttonCornerRadius)
-                    .stroke(Color.pitchDivider, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
             )
         }
     }
@@ -198,9 +230,9 @@ struct SecondaryButton: View {
 #Preview {
     VStack(spacing: Spacing.base) {
         InputField(
-            label: "Startup Name",
-            placeholder: "e.g., Acme Inc",
             text: .constant(""),
+            placeholder: "e.g., Acme Inc",
+            label: "Startup Name",
             icon: "building.2.fill"
         )
         

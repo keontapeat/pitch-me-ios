@@ -8,11 +8,12 @@
 import SwiftUI
 
 struct DeckListView: View {
-    @StateObject private var viewModel = DeckListViewModel()
+    @StateObject private var viewModel = DeckListViewModel.shared
     @StateObject private var subscriptionService = SubscriptionService.shared
     @State private var showingNewDeckWizard = false
     @State private var showingPaywall = false
     @State private var showingLimitReached = false
+    @State private var showingSettings = false
     
     var body: some View {
         NavigationStack {
@@ -33,7 +34,17 @@ struct DeckListView: View {
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.title3)
-                            .foregroundColor(.pitchLime)
+                            .foregroundColor(.pitchTextAdaptive)
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 18, weight: .regular))
+                            .foregroundColor(.pitchTextAdaptive)
                     }
                 }
                 
@@ -48,10 +59,10 @@ struct DeckListView: View {
                                 Text("Pro")
                                     .font(Typography.labelSmall)
                             }
-                            .foregroundColor(.pitchCharcoal)
+                            .foregroundColor(.white)
                             .padding(.horizontal, Spacing.sm)
                             .padding(.vertical, 4)
-                            .background(Color.pitchLime)
+                            .background(Color.pitchTextAdaptive)
                             .cornerRadius(12)
                         }
                     }
@@ -66,6 +77,9 @@ struct DeckListView: View {
             }
             .sheet(isPresented: $showingPaywall) {
                 PaywallView()
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
             }
             .alert("Limit Reached", isPresented: $showingLimitReached) {
                 Button("Upgrade to Pro") {
@@ -129,7 +143,7 @@ struct DeckListView: View {
             
             Image(systemName: "rectangle.stack.badge.plus")
                 .font(.system(size: 72))
-                .foregroundColor(.pitchLime)
+                .foregroundColor(.pitchTextAdaptive.opacity(0.3))
             
             VStack(spacing: Spacing.sm) {
                 Text("No Decks Yet")
@@ -150,10 +164,10 @@ struct DeckListView: View {
                     Text("Start a Pitch")
                 }
                 .font(Typography.labelLarge)
-                .foregroundColor(.pitchCharcoal)
+                .foregroundColor(.white)
                 .frame(height: Spacing.buttonHeight)
                 .padding(.horizontal, Spacing.xxl)
-                .background(Color.pitchLime)
+                .background(Color.pitchTextAdaptive)
                 .cornerRadius(Spacing.buttonCornerRadius)
             }
             .padding(.top, Spacing.base)
