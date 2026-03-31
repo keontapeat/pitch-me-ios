@@ -1,39 +1,101 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+
+    // ── Helper Functions ───────────────────────────────────────────────────
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
-    // Users can only access their own data
+
+    function isValidString(value, maxLength) {
+      return value is string && value.size() > 0 && value.size() <= maxLength;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'createdAt'])
+          && data.email is string
+          && data.email.size() <= 255;
+    }
+
+    function isValidDeck(data) {
+      return data.keys().hasAll(['userId', 'title', 'useCase', 'createdAt', 'updatedAt'])
+          && isValidString(data.title, 200)
+          && isValidString(data.useCase, 50)
+          && data.userId == request.auth.uid;
+    }
+
+    function isValidSlide(data) {
+      return data.keys().hasAll(['title', 'order'])
+          && isValidString(data.title, 300)
+          && data.order is int
+          && data.order >= 0
+          && data.order <= 200;
+    }
+
+    function userIdUnchanged() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // ── Users Collection ──────────────────────────────────────────────────
+
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
-      
+      allow read:   if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && userIdUnchanged();
+      allow delete: if isOwner(userId);
+
       // Decks subcollection
       match /decks/{deckId} {
-        allow read, write: if isOwner(userId);
-        
+        allow read:   if isOwner(userId);
+        allow create: if isOwner(userId) && isValidDeck(request.resource.data);
+        allow update: if isOwner(userId) && userIdUnchanged();
+        allow delete: if isOwner(userId);
+
         // Slides subcollection
         match /slides/{slideId} {
-          allow read, write: if isOwner(userId);
+          allow read:   if isOwner(userId);
+          allow create: if isOwner(userId) && isValidSlide(request.resource.data);
+          allow update: if isOwner(userId);
+          allow delete: if isOwner(userId);
         }
       }
+
+      // Documents (uploaded files metadata)
+      match /documents/{docId} {
+        allow read:   if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isOwner(userId) && userIdUnchanged();
+        allow delete: if isOwner(userId);
+      }
     }
-    
-    // Exports - user can only access their own
+
+    // ── Exports ───────────────────────────────────────────────────────────
+
     match /exports/{exportId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read:   if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    && isValidString(request.resource.data.format, 20);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
-    
-    // Uploads - user can only access their own
+
+    // ── Uploads ───────────────────────────────────────────────────────────
+
     match /uploads/{uploadId} {
-      allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read:   if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // ── Default deny — everything else is locked ──────────────────────────
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
