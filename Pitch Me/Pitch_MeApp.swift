@@ -85,8 +85,15 @@ struct Pitch_MeApp: App {
         // Fix TextEditor white background in dark mode
         UITextView.appearance().backgroundColor = .clear
         
-        // Fix TextField background in dark mode
-        UITextField.appearance().backgroundColor = .clear
+        // Fix TextField background in dark mode (but NOT inside search bar)
+        UITextField.appearance(whenContainedInInstancesOf: [UISearchBar.self]).backgroundColor = .clear
+        
+        // Fix search bar dark mode — use system material, not white
+        UISearchBar.appearance().backgroundColor = .clear
+        UISearchBar.appearance().backgroundImage = UIImage()
+        let searchFieldAppearance = UITextField.appearance(whenContainedInInstancesOf: [UISearchBar.self])
+        searchFieldAppearance.backgroundColor = UIColor.secondarySystemBackground
+        searchFieldAppearance.textColor = UIColor.label
         
         // Scroll indicator style follows system
         UIScrollView.appearance().indicatorStyle = .default

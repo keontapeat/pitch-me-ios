@@ -75,8 +75,16 @@ extension Color {
     /// Error red
     static let pitchError = Color(red: 1.0, green: 0.23, blue: 0.19)
     
-    /// Divider/border color
-    static let pitchDivider = Color(red: 0.85, green: 0.85, blue: 0.87)
+    /// Divider/border color (light mode only — use pitchDivider which is now adaptive)
+    static let pitchDividerLight = Color(red: 0.85, green: 0.85, blue: 0.87)
+    
+    /// Divider/border color (dark mode)
+    static let pitchDividerDark = Color(red: 0.28, green: 0.28, blue: 0.30)
+    
+    /// Adaptive divider — visible in both light and dark mode
+    static var pitchDivider: Color {
+        Color(light: pitchDividerLight, dark: pitchDividerDark)
+    }
     
     // MARK: - Theme-Specific Colors
     

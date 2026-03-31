@@ -59,10 +59,10 @@ struct DeckListView: View {
                                 Text("Pro")
                                     .font(Typography.labelSmall)
                             }
-                            .foregroundColor(.white)
+                            .foregroundColor(.pitchCharcoal)
                             .padding(.horizontal, Spacing.sm)
                             .padding(.vertical, 4)
-                            .background(Color.pitchTextAdaptive)
+                            .background(Color.pitchLime)
                             .cornerRadius(12)
                         }
                     }

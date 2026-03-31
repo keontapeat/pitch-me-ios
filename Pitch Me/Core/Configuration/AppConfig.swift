@@ -16,6 +16,7 @@
 //
 
 import Foundation
+import FirebaseAuth
 
 // MARK: - App Configuration
 
@@ -120,6 +121,31 @@ struct AppConfig {
     
     /// Maximum cached decks
     static let maxCachedDecks = 50
+    
+    // MARK: - Admin / Owner Accounts
+    
+    /// Owner/admin emails — these accounts always get Pro Plus, no purchase required.
+    static let adminEmails: Set<String> = [
+        "keontapeat@icloud.com",
+        "keontapeat@gmail.com",
+        "keonta@pitchme.app",
+    ]
+    
+    /// Returns true if the signed-in Firebase UID belongs to an admin account.
+    /// Checks email via FirebaseAuth — works without knowing the UID in advance.
+    static func isAdminUID(_ uid: String) -> Bool {
+        guard let currentUser = FirebaseAuth.Auth.auth().currentUser,
+              currentUser.uid == uid,
+              let email = currentUser.email else { return false }
+        return adminEmails.contains(email.lowercased())
+    }
+    
+    /// Convenience — check the currently signed-in user.
+    static var currentUserIsAdmin: Bool {
+        guard let user = FirebaseAuth.Auth.auth().currentUser,
+              let email = user.email else { return false }
+        return adminEmails.contains(email.lowercased())
+    }
     
     // MARK: - Debug
     

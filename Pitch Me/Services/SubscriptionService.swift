@@ -42,6 +42,13 @@ final class SubscriptionService: ObservableObject {
         authStateHandle = auth.addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor in
                 if let user = user {
+                    // Admin/owner accounts always get Pro Plus — no StoreKit required
+                    if AppConfig.isAdminUID(user.uid) {
+                        self?.currentTier = .proPlus
+                        UserDefaults.standard.set(SubscriptionTier.proPlus.rawValue, forKey: "subscription_tier")
+                        print("👑 Admin account detected — Pro Plus unlocked for \(user.uid)")
+                        return
+                    }
                     await self?.syncSubscriptionFromFirebase(userId: user.uid)
                 } else {
                     self?.currentTier = .free
@@ -53,6 +60,11 @@ final class SubscriptionService: ObservableObject {
     // MARK: - Firebase Sync
     
     private func syncSubscriptionFromFirebase(userId: String) async {
+        // Double-check admin status in case UID was just fetched
+        guard !AppConfig.isAdminUID(userId) else {
+            currentTier = .proPlus
+            return
+        }
         do {
             let document = try await db.collection("users").document(userId).getDocument()
             
@@ -65,7 +77,6 @@ final class SubscriptionService: ObservableObject {
             }
         } catch {
             print("⚠️ Could not sync subscription from Firebase: \(error.localizedDescription)")
-            // Fall back to local storage
             loadSubscriptionTier()
         }
     }

@@ -210,16 +210,16 @@ struct SecondaryButton: View {
                 Text(title)
                     .font(.system(size: 17, weight: .medium))
             }
-            .foregroundColor(.white.opacity(0.85))
+            .foregroundColor(.pitchTextAdaptive)
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.08))
+                    .fill(Color.pitchCardBackgroundAdaptive)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    .stroke(Color.pitchDivider, lineWidth: 1)
             )
         }
     }

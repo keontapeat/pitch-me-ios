@@ -145,6 +145,8 @@ final class StoreKitService: ObservableObject {
     // MARK: - Current Subscription Tier
 
     var currentTier: SubscriptionTier {
+        // Admin accounts always get Pro Plus
+        if AppConfig.currentUserIsAdmin { return .proPlus }
         // Check Pro Plus first (higher tier)
         if purchasedProductIDs.contains(ProductID.proPlusMonthly.rawValue) ||
            purchasedProductIDs.contains(ProductID.proPlusYearly.rawValue) {
@@ -218,6 +220,11 @@ final class StoreKitService: ObservableObject {
     // MARK: - Firebase Sync
 
     private func syncTierFromPurchases(_ productIDs: Set<String>) async {
+        // Never downgrade an admin account
+        if AppConfig.currentUserIsAdmin {
+            SubscriptionService.shared.currentTier = .proPlus
+            return
+        }
         let tier = currentTier
         SubscriptionService.shared.currentTier = tier
         UserDefaults.standard.set(tier.rawValue, forKey: "subscription_tier")
