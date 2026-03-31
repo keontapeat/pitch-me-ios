@@ -15,6 +15,7 @@ struct RootView: View {
     
     var body: some View {
         ZStack {
+            Color.pitchBackgroundAdaptive.ignoresSafeArea()
             if showSplash {
                 // Video splash screen
                 VideoSplashView {
@@ -42,6 +43,7 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.4), value: showSplash)
         .animation(.easeInOut(duration: 0.4), value: appState.hasCompletedOnboarding)
         .animation(.easeInOut(duration: 0.4), value: authService.isAuthenticated)
+        .preferredColorScheme(appState.preferredColorScheme)
         .fullScreenCover(isPresented: $showLogin) {
             LoginView()
         }

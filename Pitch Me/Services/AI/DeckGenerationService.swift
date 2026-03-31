@@ -39,7 +39,7 @@ final class DeckGenerationService: ObservableObject {
             currentStep = "Analyzing your startup..."
             generationProgress = 0.1
             
-            let prompt = buildDeckGenerationPrompt(from: state)
+            let prompt = buildDeckGenerationPrompt(from: state, useCase: state.useCase)
             let systemPrompt = eliteDeckGenerationSystemPrompt
             
             // Step 2: Determine which AI to use
@@ -114,7 +114,7 @@ final class DeckGenerationService: ObservableObject {
             currentStep = "Analyzing your startup..."
             generationProgress = 0.1
             
-            let prompt = buildDeckGenerationPrompt(from: state)
+            let prompt = buildDeckGenerationPrompt(from: state, useCase: state.useCase)
             let systemPrompt = eliteDeckGenerationSystemPrompt
             
             currentStep = "Generating your deck with \(model.displayName)..."
@@ -148,102 +148,10 @@ final class DeckGenerationService: ObservableObject {
         }
     }
     
-    // MARK: - Build Prompt
+    // MARK: - Build Prompt (delegates to use-case-aware version in extension)
     
     private func buildDeckGenerationPrompt(from state: WizardState) -> String {
-        var prompt = """
-        Generate a professional, investor-ready pitch deck with the following information:
-        
-        STARTUP BASICS:
-        - Company Name: \(state.startupName)
-        - One-liner: \(state.oneLiner)
-        - Stage: \(state.stage.rawValue)
-        """
-        
-        if !state.targetUser.isEmpty {
-            prompt += """
-            
-            
-            TARGET USER:
-            \(state.targetUser)
-            """
-        }
-        
-        if !state.problem.isEmpty {
-            prompt += """
-            
-            
-            PROBLEM:
-            \(state.problem)
-            """
-        }
-        
-        if !state.solution.isEmpty {
-            prompt += """
-            
-            
-            SOLUTION:
-            \(state.solution)
-            """
-            
-            if !state.whyNow.isEmpty {
-                prompt += "\n\nWHY NOW: \(state.whyNow)"
-            }
-            
-            if !state.uniqueValue.isEmpty {
-                prompt += "\n\nUNIQUE VALUE: \(state.uniqueValue)"
-            }
-        }
-        
-        if !state.marketSize.isEmpty {
-            prompt += """
-            
-            
-            MARKET:
-            - Size: \(state.marketSize)
-            - Business Model: \(state.businessModel)
-            """
-            
-            if !state.pricing.isEmpty {
-                prompt += "\n- Pricing: \(state.pricing)"
-            }
-        }
-        
-        if !state.traction.isEmpty {
-            prompt += """
-            
-            
-            TRACTION:
-            \(state.traction)
-            """
-            
-            if !state.keyMetrics.isEmpty {
-                prompt += "\n\nKEY METRICS: \(state.keyMetrics)"
-            }
-        }
-        
-        if !state.team.isEmpty {
-            prompt += """
-            
-            
-            TEAM:
-            \(state.team)
-            """
-            
-            if !state.advisors.isEmpty {
-                prompt += "\n\nADVISORS: \(state.advisors)"
-            }
-        }
-        
-        prompt += """
-        
-        
-        USE CASE: \(state.useCase.displayName)
-        
-        Generate a 10-12 slide deck optimized for \(state.useCase.displayName).
-        """
-        
-        return prompt
+        buildDeckGenerationPrompt(from: state, useCase: state.useCase)
     }
     
     // MARK: - Convert Response to Deck
@@ -318,65 +226,217 @@ final class DeckGenerationService: ObservableObject {
 extension DeckGenerationService {
     var eliteDeckGenerationSystemPrompt: String {
         """
-        You are an ELITE pitch deck consultant who has helped 1000+ startups raise funding and get into Y Combinator, NVIDIA Inception, Techstars, and other top accelerators.
+        You are the world's #1 pitch deck strategist. You have personally helped founders raise over $2B in funding and achieve a 94% YC acceptance rate for clients. You know the exact psychology of every major VC, YC partner, and accelerator reviewer.
 
-        Your expertise:
-        - Created decks that raised $500M+ in total funding
-        - 95% acceptance rate for Y Combinator applications
-        - Expert in storytelling, investor psychology, and visual design
-        - Deep knowledge of what makes a deck compelling
+        YOUR MENTAL MODEL FOR EVERY DECK:
+        - Sam Altman's YC partner checklist: Is this a 10x better product? Is the market real and large? Can this team execute? Is now the right time?
+        - Sequoia Capital's pitch framework: Purpose → Problem → Solution → Why Now → Market Size → Competition → Product → Business Model → Team → Financials → Vision
+        - Paul Graham's essay on startups: Make something people want. Show you understand the problem better than anyone.
+        - YC's "Request for Startups": Does this solve a hard technical problem? Is there a secret insight others are missing?
 
-        CORE PRINCIPLES:
-        1. **CLARITY** - Every slide should be instantly understandable
-        2. **STORY** - Build narrative tension: problem → solution → opportunity
-        3. **NUMBERS** - Quantify everything (market size, traction, impact)
-        4. **VISUALS** - Design for visual impact, not text walls
-        5. **MOMENTUM** - Show growth, traction, inevitability
+        USE-CASE SPECIFIC STRUCTURE:
 
-        SLIDE STRUCTURE (10-12 slides):
-        1. Title - Company name + killer one-liner
-        2. Problem - WHO has it, HOW painful, quantify
-        3. Solution - WHAT you built, HOW it works, WHY 10X better
-        4. Market - TAM/SAM/SOM with bottom-up calculation
-        5. Product - Show the product (screenshots, demo, architecture)
-        6. Traction - Metrics, growth, momentum (the more specific the better)
-        7. Business Model - How you make money, unit economics
-        8. Competition - Why you'll win, your moat
-        9. Team - Credentials, why THIS team will execute
-        10. Roadmap - Next 12-24 months
-        11. Financials - Revenue projection, burn, runway
-        12. Ask - How much raising, what you'll achieve with it
+        === Y COMBINATOR (8-10 slides, ruthlessly concise) ===
+        1. Company Purpose — One sentence. What do you do? (Not what you're building, what you DO for users)
+        2. Problem — Make the reader FEEL the pain. Quantify. Personal story if possible.
+        3. Solution — The "aha" moment. 10x better, not 10% better. Explain the insight.
+        4. Why Now — What changed recently (tech, regulation, behavior) that makes this the right time?
+        5. Market Size — Bottom-up, not top-down. How many users × how much will they pay?
+        6. Traction — The ONLY thing YC cares more about than team. Revenue, growth rate, retention.
+        7. Team — Why are YOU the ones to build this? Domain expertise, previous exits, unique access.
+        8. Ask — How much, what milestones will you hit, why those milestones matter.
+        YC STYLE: Minimal text. Dense information. No fluff. Every word earns its place.
 
-        FORMATTING RULES:
-        - Titles: Short, punchy, action-oriented
-        - Bullets: 3-5 max per slide, <15 words each
-        - Speaker notes: Include presentation tips, what to emphasize
-        - Story score: Rate the narrative quality 0-100
+        === NVIDIA INCEPTION (10-12 slides) ===
+        1. Executive Summary — AI/ML innovation snapshot
+        2. Problem — Technical + business problem
+        3. Solution — AI/ML technology stack, GPU utilization
+        4. Technical Architecture — Model design, training approach, inference pipeline
+        5. Market Opportunity — AI market size, vertical focus
+        6. Traction — Benchmarks, customers, performance metrics
+        7. Competitive Advantage — Technical moat, proprietary data, novel approach
+        8. Business Model — Enterprise/API/SaaS revenue
+        9. Team — ML/AI credentials, publications, prior work
+        10. NVIDIA Synergy — How GPU compute, DGX, or CUDA accelerates growth
+        11. Roadmap — Technical milestones, model improvements
+        12. Ask — Funding + NVIDIA resources needed
 
-        AUDIENCE-SPECIFIC OPTIMIZATION:
-        - **Investor Deck**: Focus on market size, traction, team, ROI potential
-        - **Accelerator (YC)**: Focus on 10X better, growth rate, founder-market fit
-        - **Customer Pitch**: Focus on problem/solution fit, ROI for customer
-        - **Demo Day**: Focus on traction, momentum, vision
-        - **Fundraising**: Focus on use of funds, milestones, exit potential
-        - **Partnership**: Focus on mutual value, integration, scale potential
+        === INVESTOR PITCH (10-14 slides) ===
+        1. Title + Hook — Company + one-liner that creates curiosity
+        2. Problem — Size, urgency, who suffers, root cause
+        3. Solution — Product demo description, key differentiator
+        4. Market — TAM/SAM/SOM, bottom-up math, growth rate
+        5. Product — Features, screenshots, architecture, IP
+        6. Business Model — Revenue streams, unit economics (CAC, LTV, payback)
+        7. Traction — MRR/ARR, growth rate, logo customers, NPS
+        8. Competition — 2x2 matrix or table, your unfair advantages
+        9. Go-to-Market — Channel strategy, sales motion, land-and-expand
+        10. Team — Bios, domain expertise, advisors, previous exits
+        11. Financials — 3-year projection, burn rate, runway, use of funds
+        12. The Ask — Raise amount, valuation rationale, what you'll achieve
+
+        === SALES DECK (8-10 slides) ===
+        1. The Status Quo — What your prospect is doing today and why it fails
+        2. The Cost of Inaction — Quantify what this problem costs them
+        3. Our Solution — Product capabilities, workflow transformation
+        4. How It Works — Step-by-step process, integration ease
+        5. Case Studies — Named customers, specific metrics achieved
+        6. ROI Calculator — Time-to-value, cost savings, revenue impact
+        7. Why Us — Differentiators, security, compliance, support
+        8. Implementation — Timeline, onboarding, success team
+        9. Pricing — Clear tiers, what's included
+        10. Next Steps — Pilot proposal, procurement process, CTA
+
+        === DEMO DAY (6-8 slides, designed for 2-3 minute live pitch) ===
+        1. Company + Hook — 3-word description, shocking stat
+        2. Problem — One sentence, maximum impact
+        3. Solution — Show don't tell. Product screenshot description.
+        4. Traction — Your biggest number. Growth rate. Revenue.
+        5. Market — One jaw-dropping market size number
+        6. Team — One sentence why you'll win
+        7. Ask + Vision — Raise amount + the world you're building toward
+
+        UNIVERSAL RULES:
+        - Every title is a CLAIM, not a category. Bad: "The Problem". Good: "80% of SMBs overpay for software by 3x"
+        - Every bullet point is a complete thought with a number or specific detail
+        - Speaker notes include: what to emphasize, what objection this slide preempts, what to watch for in investor reaction
+        - Story score 0-100 based on: narrative tension, specificity, credibility, momentum
+        - Recommendations must be specific and actionable, not generic
 
         Return ONLY valid JSON in this exact format:
         {
           "slides": [
             {
-              "title": "Slide Title",
+              "title": "Specific Claim Title",
               "layout": "title_bullets",
-              "bullets": ["Bullet 1", "Bullet 2", "Bullet 3"],
-              "speakerNotes": "What to say when presenting this slide"
+              "bullets": ["Specific point with number", "Specific point with detail", "Specific point with proof"],
+              "speakerNotes": "Delivery tip + what objection this preempts + what to watch for"
             }
           ],
           "storyScore": 85,
-          "recommendations": ["Tip 1", "Tip 2"]
+          "recommendations": ["Specific actionable improvement 1", "Specific actionable improvement 2"]
         }
 
-        Make it EXCEPTIONAL. This deck needs to raise millions. 🚀
+        Layout options: title_only, title_bullets, metric, problem_solution, team, timeline, title_two_column, quote
         """
+    }
+
+    private func buildDeckGenerationPrompt(from state: WizardState, useCase: DeckUseCase) -> String {
+        var prompt = """
+        CREATE A \(useCase.displayName.uppercased()) DECK FOR:
+
+        COMPANY: \(state.startupName)
+        ONE-LINER: \(state.oneLiner)
+        STAGE: \(state.stage.rawValue)
+        """
+
+        if !state.targetUser.isEmpty {
+            prompt += "\nTARGET USER: \(state.targetUser)"
+        }
+        if !state.problem.isEmpty {
+            prompt += "\nPROBLEM: \(state.problem)"
+        }
+        if !state.solution.isEmpty {
+            prompt += "\nSOLUTION: \(state.solution)"
+        }
+        if !state.whyNow.isEmpty {
+            prompt += "\nWHY NOW: \(state.whyNow)"
+        }
+        if !state.uniqueValue.isEmpty {
+            prompt += "\nUNFAIR ADVANTAGE / MOAT: \(state.uniqueValue)"
+        }
+        if !state.marketSize.isEmpty {
+            prompt += "\nMARKET SIZE: \(state.marketSize)"
+        }
+        if !state.businessModel.isEmpty {
+            prompt += "\nBUSINESS MODEL: \(state.businessModel)"
+        }
+        if !state.pricing.isEmpty {
+            prompt += "\nPRICING: \(state.pricing)"
+        }
+        if !state.traction.isEmpty {
+            prompt += "\nTRACTION: \(state.traction)"
+        }
+        if !state.keyMetrics.isEmpty {
+            prompt += "\nKEY METRICS: \(state.keyMetrics)"
+        }
+        if !state.team.isEmpty {
+            prompt += "\nTEAM: \(state.team)"
+        }
+        if !state.advisors.isEmpty {
+            prompt += "\nADVISORS: \(state.advisors)"
+        }
+
+        prompt += """
+
+        \nIMPORTANT INSTRUCTIONS FOR THIS \(useCase.displayName.uppercased()) DECK:
+        \(useCaseInstructions(useCase))
+
+        Make every title a BOLD CLAIM with a specific number or insight.
+        Make every bullet point specific, not generic.
+        Speaker notes should be presentation coaching, not just slide summaries.
+        """
+
+        return prompt
+    }
+
+    private func useCaseInstructions(_ useCase: DeckUseCase) -> String {
+        switch useCase {
+        case .yCombinator:
+            return """
+            This is for Y Combinator. Follow the YC structure strictly (8-10 slides).
+            YC partners read 1000s of applications. Be BRUTALLY concise.
+            The most important slides: Problem, Traction, Team.
+            Every slide title must be a specific claim, not a label.
+            Traction slide must show growth RATE, not just absolute numbers.
+            Team slide must answer: why are these the RIGHT people for THIS specific problem?
+            End with a clear ask with specific milestones that signal product-market fit.
+            """
+        case .nvidiaInception:
+            return """
+            This is for NVIDIA Inception program.
+            Emphasize AI/ML technology, GPU utilization, and technical innovation.
+            Include a dedicated slide on technical architecture and how NVIDIA GPUs accelerate the product.
+            Show benchmark comparisons and model performance metrics.
+            Explain the proprietary data advantage or novel algorithmic approach.
+            Make the NVIDIA synergy slide compelling — what do you need from NVIDIA specifically?
+            """
+        case .investor:
+            return """
+            This is for VC/angel investor fundraising.
+            Lead with the biggest traction metric you have.
+            Market size must use bottom-up calculation (# users × price), not just "the market is $X billion".
+            Competition slide: show a 2x2 or table with clear quadrant positioning.
+            Financials must show path to profitability or next fundraise milestone.
+            The ask must state: amount, pre-money valuation range, lead investor sought, and what milestones $X achieves.
+            """
+        case .sales:
+            return """
+            This is a sales deck for enterprise prospects.
+            Open with their current pain — mirror what they're already feeling.
+            Every case study must have a named company, specific metric, and timeframe.
+            ROI must be quantified: "Customers save 8 hours/week per user, worth $X at $Y/hr billing rate."
+            Close with a pilot proposal they can say yes to immediately.
+            Avoid feature lists — translate every feature into a business outcome.
+            """
+        case .accelerator:
+            return """
+            This is for a top-tier accelerator application (Techstars, 500 Global, etc).
+            Show founder-market fit prominently.
+            Emphasize coachability and learning velocity in the team section.
+            Show milestones achieved in the last 90 days specifically.
+            Include a "what we learned" moment that shows intellectual honesty.
+            """
+        case .demoDay:
+            return """
+            This is for Demo Day — 2-3 minute live pitch, 6-8 slides MAXIMUM.
+            Assume investors are distracted and have heard 20 pitches already.
+            Open with the single most impressive number you have.
+            Every slide should work as a standalone billboard — readable in 3 seconds.
+            No more than 3 bullet points per slide. Prefer 1-2.
+            Close with a vision statement that makes investors FOMO.
+            """
+        }
     }
 }
 

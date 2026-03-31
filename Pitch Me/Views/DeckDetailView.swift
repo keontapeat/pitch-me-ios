@@ -12,6 +12,7 @@ import SwiftUI
 struct DeckDetailView: View {
     @StateObject private var viewModel: DeckDetailViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var showPitchScore = false
     
     init(deck: Deck) {
         _viewModel = StateObject(wrappedValue: DeckDetailViewModel(deck: deck))
@@ -24,6 +25,12 @@ struct DeckDetailView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     Menu {
+                        Button {
+                            showPitchScore = true
+                        } label: {
+                            Label("AI Pitch Score", systemImage: "waveform.badge.magnifyingglass")
+                        }
+
                         Button {
                             viewModel.isShowingThemePicker = true
                         } label: {
@@ -64,6 +71,9 @@ struct DeckDetailView: View {
                 if let fileURL = viewModel.exportedFileURL {
                     ShareSheet(items: [fileURL])
                 }
+            }
+            .sheet(isPresented: $showPitchScore) {
+                PitchScoreView(deck: viewModel.deck)
             }
             .alert("Export Error", isPresented: .constant(viewModel.errorMessage != nil)) {
                 Button("OK") {

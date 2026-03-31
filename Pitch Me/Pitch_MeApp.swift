@@ -81,5 +81,14 @@ struct Pitch_MeApp: App {
         
         // Set tint color for navigation and controls
         UIView.appearance(whenContainedInInstancesOf: [UIAlertController.self]).tintColor = UIColor(Color.pitchLime)
+        
+        // Fix TextEditor white background in dark mode
+        UITextView.appearance().backgroundColor = .clear
+        
+        // Fix TextField background in dark mode
+        UITextField.appearance().backgroundColor = .clear
+        
+        // Scroll indicator style follows system
+        UIScrollView.appearance().indicatorStyle = .default
     }
 }

@@ -12,6 +12,7 @@ import FirebaseFirestore
 struct SettingsView: View {
     @StateObject private var authService = AuthService.shared
     @StateObject private var subscriptionService = SubscriptionService.shared
+    @StateObject private var appState = AppState.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showSignOutAlert = false
     @State private var showDeleteAccountAlert = false
@@ -121,6 +122,31 @@ struct SettingsView: View {
                         .foregroundColor(.pitchTextAdaptive.opacity(0.5))
                 }
                 
+                // Appearance section
+                Section {
+                    Picker(selection: $appState.colorSchemePreference) {
+                        ForEach(ColorSchemePreference.allCases) { pref in
+                            Label(pref.displayName, systemImage: pref.icon)
+                                .tag(pref)
+                        }
+                    } label: {
+                        Label {
+                            Text("Appearance")
+                                .foregroundColor(.pitchTextAdaptive)
+                        } icon: {
+                            Image(systemName: appState.colorSchemePreference.icon)
+                                .foregroundColor(.pitchTextAdaptive.opacity(0.7))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(.pitchLime)
+                } header: {
+                    Text("Display")
+                        .textCase(.uppercase)
+                        .font(.caption)
+                        .foregroundColor(.pitchTextAdaptive.opacity(0.5))
+                }
+
                 // App info
                 Section {
                     HStack {
