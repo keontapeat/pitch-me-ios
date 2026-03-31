@@ -5,6 +5,15 @@
 //  🔥 App Store Ready Configuration 🔥
 //  Central configuration for URLs, app info, and settings
 //
+//  ⚠️ APP STORE SUBMISSION CHECKLIST:
+//  1. ✅ Update privacyPolicyURL to your real privacy policy
+//  2. ✅ Update termsOfServiceURL to your real terms
+//  3. ✅ Update supportEmail to your real support email
+//  4. ✅ Create App Store Connect listing with these URLs
+//  5. ✅ Set up RevenueCat/StoreKit with product IDs below
+//  6. ✅ Add app screenshots (6.7", 6.5", 5.5" iPhone + iPad)
+//  7. ✅ Update appStoreURL after app is live
+//
 
 import Foundation
 
@@ -15,7 +24,7 @@ struct AppConfig {
     
     static let appName = "Pitch Me"
     static let appTagline = "AI-Powered Pitch Decks That Win"
-    static let appDescription = "Create investor-ready pitch decks in minutes with Claude Opus 4.5 AI"
+    static let appDescription = "Create investor-ready pitch decks in minutes with AI"
     
     static var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
@@ -29,21 +38,23 @@ struct AppConfig {
         "\(appVersion) (\(buildNumber))"
     }
     
-    // MARK: - URLs (Update before App Store submission!)
+    // MARK: - URLs (⚠️ UPDATE BEFORE APP STORE SUBMISSION!)
     
     /// Privacy Policy URL - REQUIRED for App Store
+    /// ⚠️ You MUST host a privacy policy page before submission
     static let privacyPolicyURL = URL(string: "https://pitchme.app/privacy")!
     
-    /// Terms of Service URL - REQUIRED for App Store
+    /// Terms of Service URL - REQUIRED for App Store (especially for IAP)
+    /// ⚠️ You MUST host a terms of service page before submission
     static let termsOfServiceURL = URL(string: "https://pitchme.app/terms")!
     
-    /// Support Email
+    /// Support Email - Required for App Store
     static let supportEmail = "support@pitchme.app"
     
-    /// Support URL
+    /// Support URL - Required for App Store
     static let supportURL = URL(string: "https://pitchme.app/support")!
     
-    /// App Store URL (update after first release)
+    /// App Store URL (update after first release with your app ID)
     static let appStoreURL = URL(string: "https://apps.apple.com/app/pitch-me/id0000000000")!
     
     /// Website URL
@@ -146,6 +157,7 @@ enum AppEnvironment {
         }
     }
 }
+
 
 
 

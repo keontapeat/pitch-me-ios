@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import FirebaseAuth
 
 @MainActor
 final class WizardViewModel: ObservableObject {
@@ -285,7 +286,7 @@ final class WizardViewModel: ObservableObject {
         // Create deck
         return Deck(
             id: deckId,
-            userId: "current-user", // Will be replaced with real user ID
+            userId: Auth.auth().currentUser?.uid ?? "anonymous",
             title: "\(state.startupName) - \(state.useCase.displayName)",
             useCase: state.useCase,
             themeId: state.preferredTheme,

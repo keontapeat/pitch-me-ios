@@ -9,6 +9,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import FirebaseAuth
 
 // MARK: - Deck Generation Service
 
@@ -42,14 +43,14 @@ final class DeckGenerationService: ObservableObject {
             let systemPrompt = eliteDeckGenerationSystemPrompt
             
             // Step 2: Determine which AI to use
-            let provider = config.preferredAIProvider
-            currentStep = "Connecting to \(provider.displayName)..."
+            // Claude first for Pro Plus, then OpenAI, then Gemini fallback
+            currentStep = "Connecting to AI..."
             generationProgress = 0.2
             
             let response: DeckGenerationResponse
             
             // Step 3: Call AI (30-70%)
-            if provider == .anthropic && preferClaude {
+            if preferClaude && config.hasAnthropicKey {
                 // 🔥 Use Claude Opus 4.5 (ELITE)
                 currentStep = "Claude Opus 4.5 is crafting your deck..."
                 generationProgress = 0.3
@@ -61,7 +62,7 @@ final class DeckGenerationService: ObservableObject {
                     model: .claudeOpus45
                 )
                 
-            } else if provider == .openAI || config.hasOpenAIKey {
+            } else if config.hasOpenAIKey {
                 // Use GPT-4 as fallback
                 currentStep = "GPT-4 is generating your deck..."
                 generationProgress = 0.3
@@ -271,7 +272,7 @@ final class DeckGenerationService: ObservableObject {
         // Create deck
         let deck = Deck(
             id: deckId,
-            userId: "current-user", // Will be replaced with real user ID when Firebase is integrated
+            userId: Auth.auth().currentUser?.uid ?? "anonymous",
             title: wizardState.startupName,
             useCase: wizardState.useCase,
             themeId: wizardState.preferredTheme,

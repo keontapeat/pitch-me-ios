@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Combine
 import FirebaseFirestore
 import FirebaseAuth
 
@@ -51,16 +52,7 @@ final class FirestoreService: ObservableObject {
     private let auth = Auth.auth()
     
     private init() {
-        configureFirestore()
-    }
-    
-    // MARK: - Configuration
-    
-    private func configureFirestore() {
-        let settings = FirestoreSettings()
-        // Enable offline persistence
-        settings.cacheSettings = PersistentCacheSettings(sizeBytes: 100_000_000 as NSNumber) // 100MB cache
-        db.settings = settings
+        // Firestore settings are configured in AppDelegate before any service accesses Firestore
     }
     
     // MARK: - Current User ID
@@ -123,7 +115,7 @@ final class FirestoreService: ObservableObject {
         return docRef.documentID
     }
     
-    /// Update an existing deck
+    /// Update an existing deck (with slides)
     func updateDeck(_ deck: Deck) async throws {
         guard !deck.id.isEmpty else {
             throw FirestoreError.documentNotFound
@@ -133,8 +125,23 @@ final class FirestoreService: ObservableObject {
         var deckData = try encodeDeck(deck)
         deckData["updatedAt"] = FieldValue.serverTimestamp()
         
-        try await decksRef.document(deck.id).setData(deckData, merge: true)
-        print("✅ Deck updated: \(deck.id)")
+        // Use batch to update deck and slides atomically
+        let batch = db.batch()
+        
+        // Update deck document
+        let deckDoc = decksRef.document(deck.id)
+        batch.setData(deckData, forDocument: deckDoc, merge: true)
+        
+        // Update all slides
+        let slidesRef = deckDoc.collection("slides")
+        for slide in deck.slides {
+            let slideData = try encodeSlide(slide)
+            let slideDoc = slidesRef.document(slide.id)
+            batch.setData(slideData, forDocument: slideDoc)
+        }
+        
+        try await batch.commit()
+        print("✅ Deck updated with \(deck.slides.count) slides: \(deck.id)")
     }
     
     /// Delete a deck
@@ -154,7 +161,7 @@ final class FirestoreService: ObservableObject {
         print("✅ Deck deleted: \(deckId)")
     }
     
-    /// Fetch all decks for current user
+    /// Fetch all decks for current user (with slides)
     func fetchDecks() async throws -> [Deck] {
         let decksRef = try decksCollection()
         
@@ -165,16 +172,19 @@ final class FirestoreService: ObservableObject {
         var decks: [Deck] = []
         
         for document in snapshot.documents {
-            if let deck = try? decodeDeck(from: document) {
+            if var deck = try? decodeDeck(from: document) {
+                // Fetch slides for this deck
+                let slides = try await fetchSlides(forDeck: document.documentID)
+                deck.slides = slides
                 decks.append(deck)
             }
         }
         
-        print("📂 Fetched \(decks.count) decks")
+        print("📂 Fetched \(decks.count) decks with slides")
         return decks
     }
     
-    /// Fetch a single deck by ID
+    /// Fetch a single deck by ID (with slides)
     func fetchDeck(id: String) async throws -> Deck {
         let decksRef = try decksCollection()
         let document = try await decksRef.document(id).getDocument()
@@ -183,7 +193,13 @@ final class FirestoreService: ObservableObject {
             throw FirestoreError.documentNotFound
         }
         
-        return try decodeDeck(from: document)
+        var deck = try decodeDeck(from: document)
+        
+        // Fetch slides for this deck
+        let slides = try await fetchSlides(forDeck: id)
+        deck.slides = slides
+        
+        return deck
     }
     
     /// Listen to deck changes in real-time
@@ -197,7 +213,9 @@ final class FirestoreService: ObservableObject {
         
         return decksRef
             .order(by: "updatedAt", descending: true)
-            .addSnapshotListener { snapshot, error in
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
                 if let error = error {
                     print("❌ Firestore listener error: \(error.localizedDescription)")
                     return
@@ -208,11 +226,22 @@ final class FirestoreService: ObservableObject {
                     return
                 }
                 
-                let decks = documents.compactMap { doc -> Deck? in
-                    try? self.decodeDeck(from: doc)
+                // Fetch decks with their slides
+                Task { @MainActor in
+                    var decksWithSlides: [Deck] = []
+                    
+                    for doc in documents {
+                        if var deck = try? self.decodeDeck(from: doc) {
+                            // Fetch slides for this deck
+                            if let slides = try? await self.fetchSlides(forDeck: doc.documentID) {
+                                deck.slides = slides
+                            }
+                            decksWithSlides.append(deck)
+                        }
+                    }
+                    
+                    onChange(decksWithSlides)
                 }
-                
-                onChange(decks)
             }
     }
     

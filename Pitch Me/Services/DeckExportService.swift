@@ -143,63 +143,34 @@ final class DeckExportService: ObservableObject {
     
     // MARK: - PowerPoint Export (Pro & Pro Plus)
     
-    /// Export deck to PowerPoint (.pptx)
-    /// This requires a backend service since iOS can't create PPTX natively
+    /// Export deck to PowerPoint (.pptx) — pure Swift Open XML, no backend needed
     private func exportToPowerPoint(_ deck: Deck) async throws -> URL {
-        exportProgress = 0.3
+        currentStep = "Building PowerPoint slides..."
+        exportProgress = 0.4
         
-        // In production, call Cloud Function to generate PPTX
-        currentStep = "Uploading deck data..."
-        exportProgress = 0.5
-        
-        // For now, create a placeholder file that indicates backend is needed
-        // TODO: Replace with actual Cloud Function call
-        
-        let deckData = try JSONEncoder().encode(deck)
-        
-        // Call backend (mock for now)
-        currentStep = "Generating PowerPoint..."
-        exportProgress = 0.7
-        
-        try await Task.sleep(nanoseconds: 2_000_000_000) // Simulate backend processing
-        
-        // TODO: Replace this with actual backend call:
-        // let response = try await callExportCloudFunction(deck: deck, format: "pptx")
-        // let fileURL = try await downloadExportedFile(response.fileURL)
-        
-        // For now, create a JSON file with deck data that can be processed
-        let fileName = sanitizeFileName(deck.title) + "_data.json"
-        let fileURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent(fileName)
-        
-        try deckData.write(to: fileURL)
+        let fileURL = try PPTXExportService.shared.exportToPPTX(deck)
         
         exportProgress = 0.9
-        
-        // NOTE: In production, this would return the actual .pptx file
-        throw ExportError.backendServiceRequired("PowerPoint export requires backend setup")
+        currentStep = "PowerPoint ready!"
+        return fileURL
     }
     
     // MARK: - Google Slides Export (Pro Plus Only)
     
-    /// Export deck to Google Slides
-    /// This requires Google Slides API integration via backend
+    /// Export deck as .pptx and open Google Slides import — no OAuth needed for MVP
     private func exportToGoogleSlides(_ deck: Deck) async throws -> URL {
-        exportProgress = 0.3
+        currentStep = "Building presentation for Google Slides..."
+        exportProgress = 0.4
         
-        // In production, call Cloud Function to create Google Slides presentation
-        currentStep = "Connecting to Google Slides..."
-        exportProgress = 0.5
+        // Generate a real .pptx file that Google Slides can import directly
+        let pptxURL = try PPTXExportService.shared.exportToPPTX(deck)
         
-        // TODO: Implement Google Slides API integration
-        // 1. Authenticate with Google OAuth
-        // 2. Call Slides API via Cloud Function
-        // 3. Create presentation
-        // 4. Return share URL
+        exportProgress = 0.8
+        currentStep = "Ready to import into Google Slides!"
         
-        try await Task.sleep(nanoseconds: 2_000_000_000)
-        
-        throw ExportError.backendServiceRequired("Google Slides export requires backend setup")
+        // Return the .pptx file — the share sheet lets the user open it in
+        // Google Drive / Slides which auto-converts .pptx on import
+        return pptxURL
     }
     
     // MARK: - Permission Checking

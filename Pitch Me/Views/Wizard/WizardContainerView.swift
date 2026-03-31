@@ -111,25 +111,10 @@ struct WizardContainerView: View {
             Text("Your progress will be lost if you exit now.")
         }
         .fullScreenCover(item: $viewModel.generatedDeck) { deck in
-            NavigationStack {
-                DeckDetailView(deck: deck)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Save & Exit") {
-                                // 🔥 Save deck to list
-                                DeckListViewModel.shared.addDeck(deck)
-                                
-                                // Increment deck count for subscription tracking
-                                SubscriptionService.shared.incrementDeckCount()
-                                
-                                // Dismiss wizard
-                                dismiss()
-                            }
-                            .fontWeight(.semibold)
-                            .foregroundColor(.pitchLime)
-                        }
-                    }
-            }
+            DeckPreviewContainer(initialDeck: deck, onSaveAndExit: {
+                // Dismiss wizard
+                dismiss()
+            })
         }
         .onAppear {
             // Load subscription status
@@ -216,6 +201,111 @@ struct WizardContainerView: View {
         default:
             return "Finalizing your deck..."
         }
+    }
+}
+
+// MARK: - Deck Preview Container
+
+/// Container that manages deck state and ensures proper saving
+struct DeckPreviewContainer: View {
+    let initialDeck: Deck
+    let onSaveAndExit: () -> Void
+    
+    @StateObject private var viewModel: DeckDetailViewModel
+    @Environment(\.dismiss) private var dismiss
+    
+    init(initialDeck: Deck, onSaveAndExit: @escaping () -> Void) {
+        self.initialDeck = initialDeck
+        self.onSaveAndExit = onSaveAndExit
+        _viewModel = StateObject(wrappedValue: DeckDetailViewModel(deck: initialDeck))
+    }
+    
+    var body: some View {
+        NavigationStack {
+            DeckDetailViewContent(viewModel: viewModel)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Save & Exit") {
+                            saveAndExit()
+                        }
+                        .fontWeight(.semibold)
+                        .foregroundColor(.pitchLime)
+                    }
+                    
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        Menu {
+                            Button {
+                                viewModel.isShowingThemePicker = true
+                            } label: {
+                                Label("Change Theme", systemImage: "paintbrush.fill")
+                            }
+                            
+                            Button {
+                                viewModel.isShowingExportOptions = true
+                            } label: {
+                                Label("Export Deck", systemImage: "square.and.arrow.up")
+                            }
+                            
+                            Divider()
+                            
+                            Button {
+                                viewModel.addSlide()
+                            } label: {
+                                Label("Add Slide", systemImage: "plus.rectangle")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .foregroundColor(.pitchLime)
+                        }
+                    }
+                }
+                .navigationTitle(viewModel.deck.title)
+                .navigationBarTitleDisplayMode(.inline)
+        }
+        .sheet(isPresented: $viewModel.isShowingThemePicker) {
+            ThemePickerView(
+                selectedTheme: viewModel.deck.theme,
+                onThemeSelected: { theme in
+                    viewModel.changeTheme(to: theme)
+                }
+            )
+        }
+        .sheet(isPresented: $viewModel.isShowingExportOptions) {
+            ExportOptionsView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $viewModel.showShareSheet) {
+            if let fileURL = viewModel.exportedFileURL {
+                ShareSheet(items: [fileURL])
+            }
+        }
+        .alert("Export Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+            Button("OK") {
+                viewModel.errorMessage = nil
+            }
+        } message: {
+            if let error = viewModel.errorMessage {
+                Text(error)
+            }
+        }
+    }
+    
+    private func saveAndExit() {
+        // 🔥 Save the EDITED deck from viewModel, not the initial deck!
+        let editedDeck = viewModel.deck
+        
+        print("💾 Saving deck: \(editedDeck.title) with \(editedDeck.slides.count) slides")
+        
+        // Save to deck list
+        DeckListViewModel.shared.addDeck(editedDeck)
+        
+        // Increment deck count for subscription tracking
+        SubscriptionService.shared.incrementDeckCount()
+        
+        // Dismiss the full screen cover first
+        dismiss()
+        
+        // Then trigger the wizard dismissal
+        onSaveAndExit()
     }
 }
 

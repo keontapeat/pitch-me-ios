@@ -51,6 +51,8 @@ enum DeckUseCase: String, Codable, CaseIterable {
     case investor = "investor"
     case sales = "sales"
     case accelerator = "accelerator"
+    case yCombinator = "y_combinator"
+    case nvidiaInception = "nvidia_inception"
     case demoDay = "demo_day"
     
     var displayName: String {
@@ -58,6 +60,8 @@ enum DeckUseCase: String, Codable, CaseIterable {
         case .investor: return "Investor Pitch"
         case .sales: return "Sales Deck"
         case .accelerator: return "Accelerator"
+        case .yCombinator: return "Y Combinator"
+        case .nvidiaInception: return "NVIDIA Inception"
         case .demoDay: return "Demo Day"
         }
     }
@@ -65,13 +69,17 @@ enum DeckUseCase: String, Codable, CaseIterable {
     var description: String {
         switch self {
         case .investor:
-            return "Raise capital with a compelling story"
+            return "Raise seed, Series A, or growth capital from VCs and angels"
         case .sales:
-            return "Win customers and close deals"
+            return "Win enterprise customers and close B2B deals"
         case .accelerator:
-            return "Apply to top accelerator programs"
+            return "Apply to Techstars, 500 Global, and other top programs"
+        case .yCombinator:
+            return "Stand out in YC's competitive application process"
+        case .nvidiaInception:
+            return "Join NVIDIA's free program for AI/ML startups"
         case .demoDay:
-            return "Shine on stage in 3 minutes"
+            return "Deliver a compelling 3-minute pitch on stage"
         }
     }
     
@@ -80,7 +88,39 @@ enum DeckUseCase: String, Codable, CaseIterable {
         case .investor: return "chart.line.uptrend.xyaxis"
         case .sales: return "cart.fill"
         case .accelerator: return "bolt.fill"
+        case .yCombinator: return "y.circle.fill"
+        case .nvidiaInception: return "cpu.fill"
         case .demoDay: return "mic.fill"
+        }
+    }
+    
+    /// Detailed explanation of what this deck type is optimized for
+    var detailedDescription: String {
+        switch self {
+        case .investor:
+            return "Optimized for venture capital and angel investor meetings. Includes problem, solution, market size (TAM/SAM/SOM), traction, business model, team, and funding ask slides."
+        case .sales:
+            return "Designed to convert prospects into customers. Focuses on pain points, ROI, case studies, pricing, and clear call-to-action."
+        case .accelerator:
+            return "Tailored for accelerator applications like Techstars, 500 Global, and Plug and Play. Emphasizes team, traction, and coachability."
+        case .yCombinator:
+            return "Follows YC's minimalist philosophy: clear problem, unique insight, market opportunity, traction, and exceptional team. Keep it simple and focused."
+        case .nvidiaInception:
+            return "Highlights your AI/ML technology, GPU utilization, technical architecture, and scalability. Perfect for joining NVIDIA's startup ecosystem with access to hardware, cloud credits, and VC network."
+        case .demoDay:
+            return "Condensed, high-impact deck for 2-5 minute presentations. Bold visuals, minimal text, and a memorable hook to capture investor attention."
+        }
+    }
+    
+    /// Recommended number of slides for this deck type
+    var recommendedSlideCount: ClosedRange<Int> {
+        switch self {
+        case .investor: return 10...15
+        case .sales: return 8...12
+        case .accelerator: return 10...12
+        case .yCombinator: return 8...10
+        case .nvidiaInception: return 10...12
+        case .demoDay: return 6...10
         }
     }
 }

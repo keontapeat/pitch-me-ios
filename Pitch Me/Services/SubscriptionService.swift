@@ -146,62 +146,67 @@ final class SubscriptionService: ObservableObject {
         return max(0, limit - total)
     }
     
-    // MARK: - Upgrade to Pro ($9.99)
+    // MARK: - Upgrade to Pro ($9.99/mo) — Real StoreKit 2
     
-    func upgradeToPro() async throws {
+    func upgradeToPro(yearly: Bool = false) async throws {
         isLoading = true
         defer { isLoading = false }
         
-        // Simulate purchase flow
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        let productId: StoreKitService.ProductID = yearly ? .proYearly : .proMonthly
+        let purchased = try await StoreKitService.shared.purchaseProduct(id: productId)
         
-        // In production, integrate with RevenueCat:
-        // let offerings = try await Purchases.shared.offerings()
-        // let package = offerings.current?.package(identifier: "pro_monthly")
-        // let result = try await Purchases.shared.purchase(package: package)
-        
-        currentTier = .pro
-        UserDefaults.standard.set(SubscriptionTier.pro.rawValue, forKey: "subscription_tier")
-        
-        // Sync to Firebase
-        await updateSubscriptionInFirebase(.pro)
+        if purchased {
+            currentTier = .pro
+            UserDefaults.standard.set(SubscriptionTier.pro.rawValue, forKey: "subscription_tier")
+            await updateSubscriptionInFirebase(.pro)
+            print("✅ Pro subscription activated!")
+        }
     }
     
-    // MARK: - Upgrade to Pro Plus ($29.99)
+    // MARK: - Upgrade to Pro Plus ($29.99/mo) — Real StoreKit 2
     
-    func upgradeToProPlus() async throws {
+    func upgradeToProPlus(yearly: Bool = false) async throws {
         isLoading = true
         defer { isLoading = false }
         
-        // Simulate purchase flow
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        let productId: StoreKitService.ProductID = yearly ? .proPlusYearly : .proPlusMonthly
+        let purchased = try await StoreKitService.shared.purchaseProduct(id: productId)
         
-        // In production, integrate with RevenueCat:
-        // let offerings = try await Purchases.shared.offerings()
-        // let package = offerings.current?.package(identifier: "proplus_monthly")
-        // let result = try await Purchases.shared.purchase(package: package)
-        
-        currentTier = .proPlus
-        UserDefaults.standard.set(SubscriptionTier.proPlus.rawValue, forKey: "subscription_tier")
-        
-        // Sync to Firebase
-        await updateSubscriptionInFirebase(.proPlus)
+        if purchased {
+            currentTier = .proPlus
+            UserDefaults.standard.set(SubscriptionTier.proPlus.rawValue, forKey: "subscription_tier")
+            await updateSubscriptionInFirebase(.proPlus)
+            print("✅ Pro Plus subscription activated!")
+        }
     }
     
     func restorePurchases() async throws {
         isLoading = true
         defer { isLoading = false }
         
-        // Simulate restore
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        // Real StoreKit 2 restore
+        try await StoreKitService.shared.restorePurchases()
         
-        // In production:
-        // let customerInfo = try await Purchases.shared.restorePurchases()
-        // Update currentTier based on active entitlements
+        // Pick up refreshed tier from StoreKit
+        let restoredTier = StoreKitService.shared.currentTier
+        currentTier = restoredTier
+        UserDefaults.standard.set(restoredTier.rawValue, forKey: "subscription_tier")
+        await updateSubscriptionInFirebase(restoredTier)
         
-        // Sync from Firebase to get latest subscription status
-        if let userId = auth.currentUser?.uid {
-            await syncSubscriptionFromFirebase(userId: userId)
+        print("✅ Purchases restored: \(restoredTier.displayName)")
+    }
+    
+    // MARK: - Initialize StoreKit on launch
+    
+    func initializeStoreKit() {
+        Task {
+            await StoreKitService.shared.loadProducts()
+            // Override local cache with verified StoreKit entitlements
+            let verifiedTier = StoreKitService.shared.currentTier
+            if verifiedTier != .free || currentTier == .free {
+                currentTier = verifiedTier
+                UserDefaults.standard.set(verifiedTier.rawValue, forKey: "subscription_tier")
+            }
         }
     }
     

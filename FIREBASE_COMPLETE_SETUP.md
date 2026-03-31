@@ -265,3 +265,5 @@ You should see:
 **Your Firebase setup is COMPLETE! 🎉**
 
 Just enable the Firestore API and you're ready to go!
+
+

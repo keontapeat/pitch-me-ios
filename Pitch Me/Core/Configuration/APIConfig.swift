@@ -123,11 +123,12 @@ final class APIConfig {
         hasAnthropicKey || hasOpenAIKey || hasGeminiKey
     }
     
-    /// Returns the best available AI provider (prefers Gemini for SPEED 🔥)
+    /// Returns the best available AI provider
+    /// Claude is ELITE for Pro Plus; OpenAI for Pro; Gemini for document analysis speed
     var preferredAIProvider: AIProvider {
-        if hasGeminiKey { return .gemini }     // 🔥 FASTEST - Use first!
-        if hasOpenAIKey { return .openAI }     // Good fallback
-        if hasAnthropicKey { return .anthropic } // Claude as backup
+        if hasAnthropicKey { return .anthropic } // Claude Opus — best for deck generation
+        if hasOpenAIKey { return .openAI }       // GPT-4o fallback
+        if hasGeminiKey { return .gemini }       // Gemini fallback
         return .none
     }
     

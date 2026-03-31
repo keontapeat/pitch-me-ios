@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+// MARK: - DeckDetailView (creates its own ViewModel)
+
 struct DeckDetailView: View {
     @StateObject private var viewModel: DeckDetailViewModel
     @Environment(\.dismiss) private var dismiss
@@ -14,6 +16,71 @@ struct DeckDetailView: View {
     init(deck: Deck) {
         _viewModel = StateObject(wrappedValue: DeckDetailViewModel(deck: deck))
     }
+    
+    var body: some View {
+        DeckDetailViewContent(viewModel: viewModel)
+            .navigationTitle(viewModel.deck.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Menu {
+                        Button {
+                            viewModel.isShowingThemePicker = true
+                        } label: {
+                            Label("Change Theme", systemImage: "paintbrush.fill")
+                        }
+                        
+                        Button {
+                            viewModel.isShowingExportOptions = true
+                        } label: {
+                            Label("Export Deck", systemImage: "square.and.arrow.up")
+                        }
+                        
+                        Divider()
+                        
+                        Button {
+                            viewModel.addSlide()
+                        } label: {
+                            Label("Add Slide", systemImage: "plus.rectangle")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .foregroundColor(.pitchLime)
+                    }
+                }
+            }
+            .sheet(isPresented: $viewModel.isShowingThemePicker) {
+                ThemePickerView(
+                    selectedTheme: viewModel.deck.theme,
+                    onThemeSelected: { theme in
+                        viewModel.changeTheme(to: theme)
+                    }
+                )
+            }
+            .sheet(isPresented: $viewModel.isShowingExportOptions) {
+                ExportOptionsView(viewModel: viewModel)
+            }
+            .sheet(isPresented: $viewModel.showShareSheet) {
+                if let fileURL = viewModel.exportedFileURL {
+                    ShareSheet(items: [fileURL])
+                }
+            }
+            .alert("Export Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+                Button("OK") {
+                    viewModel.errorMessage = nil
+                }
+            } message: {
+                if let error = viewModel.errorMessage {
+                    Text(error)
+                }
+            }
+    }
+}
+
+// MARK: - DeckDetailViewContent (takes external ViewModel)
+
+struct DeckDetailViewContent: View {
+    @ObservedObject var viewModel: DeckDetailViewModel
     
     var body: some View {
         ZStack {
@@ -33,61 +100,6 @@ struct DeckDetailView: View {
                 } else {
                     emptyDeckView
                 }
-            }
-        }
-        .navigationTitle(viewModel.deck.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Menu {
-                    Button {
-                        viewModel.isShowingThemePicker = true
-                    } label: {
-                        Label("Change Theme", systemImage: "paintbrush.fill")
-                    }
-                    
-                    Button {
-                        viewModel.isShowingExportOptions = true
-                    } label: {
-                        Label("Export Deck", systemImage: "square.and.arrow.up")
-                    }
-                    
-                    Divider()
-                    
-                    Button {
-                        viewModel.addSlide()
-                    } label: {
-                        Label("Add Slide", systemImage: "plus.rectangle")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .foregroundColor(.pitchLime)
-                }
-            }
-        }
-        .sheet(isPresented: $viewModel.isShowingThemePicker) {
-            ThemePickerView(
-                selectedTheme: viewModel.deck.theme,
-                onThemeSelected: { theme in
-                    viewModel.changeTheme(to: theme)
-                }
-            )
-        }
-        .sheet(isPresented: $viewModel.isShowingExportOptions) {
-            ExportOptionsView(viewModel: viewModel)
-        }
-        .sheet(isPresented: $viewModel.showShareSheet) {
-            if let fileURL = viewModel.exportedFileURL {
-                ShareSheet(items: [fileURL])
-            }
-        }
-        .alert("Export Error", isPresented: .constant(viewModel.errorMessage != nil)) {
-            Button("OK") {
-                viewModel.errorMessage = nil
-            }
-        } message: {
-            if let error = viewModel.errorMessage {
-                Text(error)
             }
         }
     }
@@ -555,7 +567,7 @@ struct ExportFormatCard: View {
     let onTap: () -> Void
     
     private var isLocked: Bool {
-        currentTier.rawValue < format.requiredTier.rawValue
+        currentTier.tierLevel < format.requiredTier.tierLevel
     }
     
     var body: some View {

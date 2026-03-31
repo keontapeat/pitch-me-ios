@@ -6,15 +6,19 @@
 //
 
 import SwiftUI
+import StoreKit
 
 struct PaywallView: View {
     @StateObject private var subscriptionService = SubscriptionService.shared
+    @StateObject private var storeKit = StoreKitService.shared
     @Environment(\.dismiss) private var dismiss
     @State private var selectedPlan: SubscriptionTier = .pro
+    @State private var isYearly: Bool = false
+    @State private var purchaseError: String?
+    @State private var showError = false
     
     var body: some View {
         ZStack {
-            // Background
             LinearGradient(
                 colors: [Color.pitchCharcoal, Color.pitchCharcoalWarm],
                 startPoint: .topLeading,
@@ -41,11 +45,18 @@ struct PaywallView: View {
                     }
                     .padding(.top, Spacing.xxxl)
                     
+                    // Billing toggle
+                    BillingToggle(isYearly: $isYearly)
+                        .padding(.horizontal, Spacing.screenMarginHorizontal)
+                    
                     // Plan cards
                     VStack(spacing: Spacing.base) {
                         PlanCard(
                             tier: .pro,
                             isSelected: selectedPlan == .pro,
+                            isYearly: isYearly,
+                            monthlyPrice: storeKit.displayPrice(for: .proMonthly),
+                            yearlyPrice: storeKit.displayPrice(for: .proYearly),
                             onSelect: { selectedPlan = .pro },
                             badge: "🔥 Most Popular"
                         )
@@ -53,6 +64,9 @@ struct PaywallView: View {
                         PlanCard(
                             tier: .proPlus,
                             isSelected: selectedPlan == .proPlus,
+                            isYearly: isYearly,
+                            monthlyPrice: storeKit.displayPrice(for: .proPlusMonthly),
+                            yearlyPrice: storeKit.displayPrice(for: .proPlusYearly),
                             onSelect: { selectedPlan = .proPlus },
                             badge: "🚀 Power Users"
                         )
@@ -76,29 +90,40 @@ struct PaywallView: View {
                         PrimaryButton(
                             "Start Free 7-Day Trial",
                             icon: "sparkles",
-                            isLoading: subscriptionService.isLoading
+                            isLoading: subscriptionService.isLoading || storeKit.isLoading
                         ) {
                             Task {
-                                if selectedPlan == .pro {
-                                    try? await subscriptionService.upgradeToPro()
-                                } else if selectedPlan == .proPlus {
-                                    try? await subscriptionService.upgradeToProPlus()
-                                }
-                                dismiss()
+                                await handlePurchase()
                             }
                         }
                         
                         Button("Restore Purchases") {
                             Task {
-                                try? await subscriptionService.restorePurchases()
+                                do {
+                                    try await subscriptionService.restorePurchases()
+                                    dismiss()
+                                } catch {
+                                    purchaseError = error.localizedDescription
+                                    showError = true
+                                }
                             }
                         }
                         .font(Typography.labelMedium)
                         .foregroundColor(.white.opacity(0.7))
                         
-                        Text("Cancel anytime. \(selectedPlan.monthlyPrice)/month after trial.")
+                        Text("Cancel anytime. Auto-renews at \(priceAfterTrial).")
                             .font(Typography.labelSmall)
                             .foregroundColor(.white.opacity(0.5))
+                            .multilineTextAlignment(.center)
+                        
+                        // Required legal links for App Store
+                        HStack(spacing: Spacing.lg) {
+                            Link("Terms of Use", destination: AppConfig.termsOfServiceURL)
+                            Text("•").foregroundColor(.white.opacity(0.4))
+                            Link("Privacy Policy", destination: AppConfig.privacyPolicyURL)
+                        }
+                        .font(Typography.labelSmall)
+                        .foregroundColor(.white.opacity(0.4))
                     }
                     .padding(.horizontal, Spacing.screenMarginHorizontal)
                     .padding(.bottom, Spacing.xxxl)
@@ -109,9 +134,7 @@ struct PaywallView: View {
             VStack {
                 HStack {
                     Spacer()
-                    Button {
-                        dismiss()
-                    } label: {
+                    Button { dismiss() } label: {
                         Image(systemName: "xmark")
                             .font(.title3)
                             .foregroundColor(.white)
@@ -124,6 +147,86 @@ struct PaywallView: View {
                 Spacer()
             }
         }
+        .alert("Purchase Failed", isPresented: $showError) {
+            Button("OK") {}
+        } message: {
+            Text(purchaseError ?? "An unknown error occurred. Please try again.")
+        }
+        .onAppear {
+            if storeKit.products.isEmpty {
+                Task { await storeKit.loadProducts() }
+            }
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    private var priceAfterTrial: String {
+        switch selectedPlan {
+        case .pro:     return isYearly ? storeKit.displayPrice(for: .proYearly) + "/yr" : storeKit.displayPrice(for: .proMonthly) + "/mo"
+        case .proPlus: return isYearly ? storeKit.displayPrice(for: .proPlusYearly) + "/yr" : storeKit.displayPrice(for: .proPlusMonthly) + "/mo"
+        default:       return ""
+        }
+    }
+    
+    private func handlePurchase() async {
+        do {
+            if selectedPlan == .pro {
+                try await subscriptionService.upgradeToPro(yearly: isYearly)
+            } else if selectedPlan == .proPlus {
+                try await subscriptionService.upgradeToProPlus(yearly: isYearly)
+            }
+            // Only dismiss on confirmed purchase (not user cancel)
+            if subscriptionService.currentTier != .free {
+                dismiss()
+            }
+        } catch {
+            purchaseError = error.localizedDescription
+            showError = true
+        }
+    }
+}
+
+// MARK: - Billing Toggle
+
+struct BillingToggle: View {
+    @Binding var isYearly: Bool
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            toggleOption(title: "Monthly", selected: !isYearly) {
+                withAnimation(.spring(response: 0.3)) { isYearly = false }
+            }
+            toggleOption(title: "Yearly", badge: "Save 34%", selected: isYearly) {
+                withAnimation(.spring(response: 0.3)) { isYearly = true }
+            }
+        }
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(12)
+    }
+    
+    private func toggleOption(title: String, badge: String? = nil, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(Typography.labelMedium)
+                    .foregroundColor(selected ? .pitchCharcoal : .white.opacity(0.6))
+                if let badge = badge {
+                    Text(badge)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(selected ? .pitchCharcoal : .pitchLime)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(selected ? Color.pitchCharcoal.opacity(0.15) : Color.pitchLime.opacity(0.2))
+                        .cornerRadius(6)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Spacing.sm)
+            .background(selected ? Color.pitchLime : Color.clear)
+            .cornerRadius(10)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -132,12 +235,26 @@ struct PaywallView: View {
 struct PlanCard: View {
     let tier: SubscriptionTier
     let isSelected: Bool
+    let isYearly: Bool
+    let monthlyPrice: String
+    let yearlyPrice: String
     let onSelect: () -> Void
     let badge: String?
     
-    init(tier: SubscriptionTier, isSelected: Bool, onSelect: @escaping () -> Void, badge: String? = nil) {
+    init(
+        tier: SubscriptionTier,
+        isSelected: Bool,
+        isYearly: Bool = false,
+        monthlyPrice: String,
+        yearlyPrice: String,
+        onSelect: @escaping () -> Void,
+        badge: String? = nil
+    ) {
         self.tier = tier
         self.isSelected = isSelected
+        self.isYearly = isYearly
+        self.monthlyPrice = monthlyPrice
+        self.yearlyPrice = yearlyPrice
         self.onSelect = onSelect
         self.badge = badge
     }
@@ -152,18 +269,24 @@ struct PlanCard: View {
                             .foregroundColor(.white)
                         
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            Text(tier.monthlyPrice)
+                            Text(isYearly ? yearlyPrice : monthlyPrice)
                                 .font(.system(size: 32, weight: .bold))
                                 .foregroundColor(.pitchLime)
                             
-                            Text("/month")
+                            Text(isYearly ? "/year" : "/month")
                                 .font(Typography.bodyMedium)
                                 .foregroundColor(.white.opacity(0.6))
                         }
                         
-                        Text("or \(tier.yearlyPrice)/year")
-                            .font(Typography.labelSmall)
-                            .foregroundColor(.pitchLime)
+                        if isYearly {
+                            Text("Billed annually — best value")
+                                .font(Typography.labelSmall)
+                                .foregroundColor(.pitchLime)
+                        } else {
+                            Text("or \(yearlyPrice)/year — save 34%")
+                                .font(Typography.labelSmall)
+                                .foregroundColor(.pitchLime.opacity(0.8))
+                        }
                     }
                     
                     Spacer()

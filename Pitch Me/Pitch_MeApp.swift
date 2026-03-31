@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FirebaseCore
+import FirebaseFirestore
 
 // MARK: - App Delegate
 
@@ -17,6 +18,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         // Configure Firebase
         FirebaseApp.configure()
+        
+        // Configure Firestore settings BEFORE any other Firestore access
+        let settings = FirestoreSettings()
+        settings.cacheSettings = PersistentCacheSettings(sizeBytes: 100_000_000 as NSNumber) // 100MB cache
+        Firestore.firestore().settings = settings
+        
+        // Initialize StoreKit — verifies entitlements and loads products
+        Task { @MainActor in
+            SubscriptionService.shared.initializeStoreKit()
+        }
         
         return true
     }

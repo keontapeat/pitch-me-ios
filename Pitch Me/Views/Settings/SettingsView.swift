@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
 
 struct SettingsView: View {
     @StateObject private var authService = AuthService.shared
@@ -13,6 +15,9 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showSignOutAlert = false
     @State private var showDeleteAccountAlert = false
+    @State private var isDeletingAccount = false
+    @State private var deleteErrorMessage: String?
+    @State private var showDeleteError = false
     
     private var aiProvider: AIProvider {
         APIConfig.shared.preferredAIProvider
@@ -186,6 +191,7 @@ struct SettingsView: View {
                             Text("Delete Account")
                         }
                     }
+                    .disabled(isDeletingAccount)
                 } header: {
                     Text("Account")
                         .textCase(.uppercase)
@@ -224,13 +230,66 @@ struct SettingsView: View {
             }
             .alert("Delete Account", isPresented: $showDeleteAccountAlert) {
                 Button("Cancel", role: .cancel) { }
-                Button("Delete", role: .destructive) {
-                    // Handle account deletion
-                    // TODO: Implement account deletion
+                Button("Delete Forever", role: .destructive) {
+                    Task { await deleteAccount() }
                 }
             } message: {
                 Text("This action cannot be undone. All your decks and data will be permanently deleted.")
             }
+            .alert("Deletion Failed", isPresented: $showDeleteError) {
+                Button("OK") {}
+            } message: {
+                Text(deleteErrorMessage ?? "Could not delete account. Please try again or contact support.")
+            }
+        }
+    }
+    
+    // MARK: - Account Deletion
+    
+    private func deleteAccount() async {
+        guard let user = Auth.auth().currentUser else { return }
+        isDeletingAccount = true
+        
+        do {
+            let uid = user.uid
+            let db = Firestore.firestore()
+            
+            // 1. Delete all user decks + slides from Firestore
+            let decksRef = db.collection("users").document(uid).collection("decks")
+            let decks = try await decksRef.getDocuments()
+            for deckDoc in decks.documents {
+                let slidesRef = deckDoc.reference.collection("slides")
+                let slides = try await slidesRef.getDocuments()
+                for slideDoc in slides.documents {
+                    try await slideDoc.reference.delete()
+                }
+                try await deckDoc.reference.delete()
+            }
+            
+            // 2. Delete the user document
+            try await db.collection("users").document(uid).delete()
+            
+            // 3. Delete Firebase Auth account
+            try await user.delete()
+            
+            // 4. Clear local data
+            UserDefaults.standard.removeObject(forKey: "saved_decks")
+            UserDefaults.standard.removeObject(forKey: "subscription_tier")
+            UserDefaults.standard.removeObject(forKey: "onboarding_completed")
+            
+            isDeletingAccount = false
+            dismiss()
+            print("✅ Account deleted successfully")
+            
+        } catch let error as NSError {
+            isDeletingAccount = false
+            // Firebase requires recent login for deletion
+            if error.code == AuthErrorCode.requiresRecentLogin.rawValue {
+                deleteErrorMessage = "For security, please sign out and sign back in before deleting your account."
+            } else {
+                deleteErrorMessage = error.localizedDescription
+            }
+            showDeleteError = true
         }
     }
     

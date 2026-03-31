@@ -91,12 +91,38 @@ final class DeckListViewModel: ObservableObject {
         print("🔥 Stopped Firestore sync")
     }
     
-    /// Merge Firebase decks with local decks (Firebase wins for conflicts)
+    /// Merge Firebase decks with local decks intelligently
     private func mergeDecks(_ firebaseDecks: [Deck]) {
-        // For now, Firebase is source of truth when authenticated
-        self.decks = firebaseDecks
+        var mergedDecks: [Deck] = []
+        
+        for firebaseDeck in firebaseDecks {
+            // If we have a local version with slides, prefer it until Firebase has slides too
+            if let localDeck = decks.first(where: { $0.id == firebaseDeck.id }) {
+                if firebaseDeck.slides.isEmpty && !localDeck.slides.isEmpty {
+                    // Firebase deck has no slides but local does - keep local
+                    mergedDecks.append(localDeck)
+                    print("⚡ Keeping local deck with slides: \(localDeck.title)")
+                } else {
+                    // Firebase has slides or both are empty - use Firebase
+                    mergedDecks.append(firebaseDeck)
+                }
+            } else {
+                // New deck from Firebase
+                mergedDecks.append(firebaseDeck)
+            }
+        }
+        
+        // Also keep any local decks that don't exist in Firebase yet (newly created, not synced)
+        for localDeck in decks {
+            if !mergedDecks.contains(where: { $0.id == localDeck.id }) {
+                mergedDecks.append(localDeck)
+                print("⚡ Keeping unsynced local deck: \(localDeck.title)")
+            }
+        }
+        
+        self.decks = mergedDecks
         saveDecksLocally() // Cache locally for offline access
-        print("🔄 Synced \(firebaseDecks.count) decks from Firebase")
+        print("🔄 Merged \(mergedDecks.count) decks (Firebase + local)")
     }
     
     // MARK: - Public Methods

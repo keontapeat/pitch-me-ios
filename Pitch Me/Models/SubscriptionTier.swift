@@ -42,6 +42,16 @@ enum SubscriptionTier: String, Codable {
         }
     }
     
+    // Numeric tier level for reliable comparisons (fixes isLocked string-compare bug)
+    var tierLevel: Int {
+        switch self {
+        case .free:       return 0
+        case .pro:        return 1
+        case .proPlus:    return 2
+        case .enterprise: return 3
+        }
+    }
+    
     // AGGRESSIVE LIMITS
     var maxDecksTotal: Int {
         switch self {

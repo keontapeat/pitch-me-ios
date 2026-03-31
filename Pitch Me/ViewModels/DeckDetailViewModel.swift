@@ -186,20 +186,25 @@ final class DeckDetailViewModel: ObservableObject {
         isRegeneratingSlide = true
         errorMessage = nil
         
-        // Simulate AI regeneration
-        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        let slide = deck.slides[index]
         
-        // Mock improvement
-        let currentSlide = deck.slides[index]
-        deck.slides[index].bullets = currentSlide.bullets.map { bullet in
-            "✨ \(bullet)"
+        do {
+            let improved = try await SlideRegenerationService.shared.improveSlide(
+                slide,
+                deckContext: deck
+            )
+            deck.slides[index].title = improved.title
+            deck.slides[index].bullets = improved.bullets
+            if let notes = improved.speakerNotes {
+                deck.slides[index].speakerNotes = notes
+            }
+            deck.slides[index].touch()
+            deck.touch()
+        } catch {
+            errorMessage = "AI improvement failed: \(error.localizedDescription)"
         }
-        deck.slides[index].touch()
-        deck.touch()
         
         isRegeneratingSlide = false
-        
-        // Save after regeneration
         saveDeck()
     }
     

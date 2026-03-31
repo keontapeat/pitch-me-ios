@@ -11,6 +11,7 @@ import SwiftUI
 import Combine
 import UniformTypeIdentifiers
 import PDFKit  // 🔥 Real PDF extraction
+import FirebaseAuth
 
 @MainActor
 final class DocumentUploadService: ObservableObject {
@@ -39,7 +40,7 @@ final class DocumentUploadService: ObservableObject {
         // Create upload record
         let upload = DocumentUpload(
             id: UUID().uuidString,
-            userId: "current-user", // Replace with real user ID
+            userId: Auth.auth().currentUser?.uid ?? "anonymous",
             fileName: fileName,
             fileSize: fileSize,
             mimeType: url.pathExtension,
